@@ -31,3 +31,12 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Speakle ###
+# Uploaded videos and extracted audio — never commit user media
+recordings/
+
+# Python virtual environment and bytecode caches
+.venv/
+__pycache__/
+*.pyc
