@@ -8,7 +8,7 @@ public class SpeakleApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(SpeakleApplication.class, args);
-		System.out.println("Hello");
+		System.out.println("Application started successfully.");
 	}
 
 }
