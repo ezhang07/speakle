@@ -7,10 +7,14 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
+  const [recording, setRecording] = useState(false)
 
 
   const constraints = { audio: true, video: { width: 1280, height: 720, resizeMode: "crop-and-scale"} };
   const videoRef = useRef(null);
+  const stream = useRef(null);
+  const chunks = useRef([]);
+  const mediaRecorder = useRef(null);
 
   // Runs when file input is changed from file select
   function handleFileChange(e) {
@@ -55,19 +59,51 @@ function App() {
 
   // webcam recording
   async function getMedia(constraints) {
-    let stream = null;
 
     try {
-      stream = await navigator.mediaDevices.getUserMedia(constraints);
+      stream.current = await navigator.mediaDevices.getUserMedia(constraints);
       
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+        videoRef.current.srcObject = stream.current;
       }
       
       // Do something with the stream, e.g., display it in a video element
     } catch (err) {
       console.error('Error accessing media devices.', err);
     }
+  }
+
+  function startRecording() {
+    if (!stream.current) {
+      console.error('No media stream yet');
+      return;
+    }
+
+    chunks.current = [];   // empty the memory so this take doesn't include last recording
+    mediaRecorder.current = new MediaRecorder(stream.current);
+
+    // recorder essentially takes snapshots, through chunks, so every new snapshot we add to the chunks array
+    mediaRecorder.current.ondataavailable = (e) => {
+      if (e.data.size > 0) {
+        chunks.current.push(e.data);
+      }
+    };
+
+    // will run only when stop is called and the final chunk has arrived -> chunks complete, can assemble file
+    mediaRecorder.current.onstop = () => {
+      const blob = new Blob(chunks.current, { type: 'video/webm' });
+      const newFile = new File([blob], 'recording.webm', { type: 'video/webm' });
+      setFile(newFile);
+    };
+
+    mediaRecorder.current.start();   // listeners all set up, start recording
+    setRecording(true);
+  }
+
+  function stopRecording() {
+    // onstop handler from startRecording assembles file once final chunk lands
+    mediaRecorder.current.stop();
+    setRecording(false);
   }
 
 
@@ -79,14 +115,19 @@ function App() {
       <button type="button" onClick={() => getMedia(constraints)}>
         Record from Webcam
       </button>
-      <video ref={videoRef} autoPlay playsInLine muted>
+      <video ref={videoRef} autoPlay playsInline muted>
       </video>
       <input
         type="file"
         accept="audio/*,video/*"
         onChange={handleFileChange}
       />
-
+      <button type="button" onClick={() => startRecording()} disabled={recording}>
+        Start Recording
+      </button>
+      <button type="button" onClick={() => stopRecording()} disabled={!recording}>
+        Stop Recording
+      </button>
       <button type="button" onClick={handleUpload} disabled={!file || loading}>
         {loading ? 'Transcribing…' : 'Transcribe'}
       </button>
