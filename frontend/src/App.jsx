@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import './App.css'
 
 function App() {
@@ -7,6 +7,10 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
+
+
+  const constraints = { audio: true, video: { width: 1280, height: 720, resizeMode: "crop-and-scale"} };
+  const videoRef = useRef(null);
 
   // Runs when file input is changed from file select
   function handleFileChange(e) {
@@ -49,11 +53,34 @@ function App() {
   }
 
 
+  // webcam recording
+  async function getMedia(constraints) {
+    let stream = null;
+
+    try {
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      
+      // Do something with the stream, e.g., display it in a video element
+    } catch (err) {
+      console.error('Error accessing media devices.', err);
+    }
+  }
+
+
+
   return (
     <section id="center">
       <h1>Speakle!</h1>
       <p>Upload a recording to transcribe it.</p>
-
+      <button type="button" onClick={() => getMedia(constraints)}>
+        Record from Webcam
+      </button>
+      <video ref={videoRef} autoPlay playsInLine muted>
+      </video>
       <input
         type="file"
         accept="audio/*,video/*"
