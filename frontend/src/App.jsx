@@ -15,6 +15,7 @@ function App() {
   const stream = useRef(null);
   const chunks = useRef([]);
   const mediaRecorder = useRef(null);
+  const restartRec = useRef(false);
 
   // Runs when file input is changed from file select
   function handleFileChange(e) {
@@ -91,6 +92,13 @@ function App() {
 
     // will run only when stop is called and the final chunk has arrived -> chunks complete, can assemble file
     mediaRecorder.current.onstop = () => {
+      if (restartRec.current) {
+        console.log('Restart');
+        restartRec.current = false;
+        startRecording();
+        return;
+      }
+      console.log('Finalize');
       const blob = new Blob(chunks.current, { type: 'video/webm' });
       const newFile = new File([blob], 'recording.webm', { type: 'video/webm' });
       setFile(newFile);
@@ -106,6 +114,10 @@ function App() {
     setRecording(false);
   }
 
+  function restartRecording() {
+    restartRec.current = true;
+    mediaRecorder.current.stop();
+  }
 
 
   return (
@@ -128,6 +140,9 @@ function App() {
       <button type="button" onClick={() => stopRecording()} disabled={!recording}>
         Stop Recording
       </button>
+      <button type="button" onClick={() => restartRecording()} disabled={!recording}>
+        Restart Recording
+        </button>
       <button type="button" onClick={handleUpload} disabled={!file || loading}>
         {loading ? 'Transcribing…' : 'Transcribe'}
       </button>
