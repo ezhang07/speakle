@@ -35,6 +35,7 @@ build/
 ### Speakle ###
 # Local AI assistant context / project notes — keep private, don't push
 CLAUDE.md
+SPEAKLE.md
 
 # Uploaded videos and extracted audio — never commit user media
 recordings/

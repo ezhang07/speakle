@@ -43,7 +43,7 @@ function App() {
       }
 
       const text = await res.text()
-      setResult(JSON.parse(text))
+      setResult(JSON.parse(text)) 
     } catch (err) {
       setError(err.message)
     } finally {
@@ -149,7 +149,9 @@ function App() {
       {result && (
         <div style={{ textAlign: 'left', marginTop: '1rem' }}>
           <h2>Transcript</h2>
-          <p>{result.text}</p>
+          <p>{result.words.map((w, i) => (
+            <span key={i}>{w.word} </span>
+          ))}</p>
         </div>
       )}
     </section>
