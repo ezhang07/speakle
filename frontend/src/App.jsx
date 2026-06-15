@@ -75,6 +75,7 @@ function App() {
       return;
     }
 
+    setResult(null);
     chunks.current = [];   // empty the memory so this take doesn't include last recording
     mediaRecorder.current = new MediaRecorder(stream.current);
 
