@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect} from 'react'
 import './App.css'
 
 function App() {
@@ -119,6 +119,19 @@ function App() {
     mediaRecorder.current.stop();
   }
 
+  useEffect(() => {
+    getMedia(constraints);
+
+    return () => {
+      // cleanup on unmount: stop webcam and recording if still going
+      if (mediaRecorder.current && mediaRecorder.current.state !== 'inactive') {
+        mediaRecorder.current.stop();
+      }
+      if (stream.current) {
+        stream.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
 
   return (
     <section id="center">
