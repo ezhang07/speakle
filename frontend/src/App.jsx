@@ -8,6 +8,7 @@ function App() {
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
   const [recording, setRecording] = useState(false)
+  const [vidURL, setVidURL] = useState(null)
 
 
   const constraints = { audio: true, video: { width: 1280, height: 720, resizeMode: "crop-and-scale"} };
@@ -93,7 +94,10 @@ function App() {
         return;
       }
       console.log('Finalize');
+
       const blob = new Blob(chunks.current, { type: 'video/webm' });
+      setVidURL(URL.createObjectURL(blob));
+
       const newFile = new File([blob], 'recording.webm', { type: 'video/webm' });
       setFile(newFile);
     };
@@ -133,6 +137,7 @@ function App() {
       <p>Record yourself speaking and transcribe it.</p>
       <video ref={videoRef} autoPlay playsInline muted>
       </video>
+      {vidURL && result && <video src={vidURL} controls></video>}
       <button type="button" onClick={() => recording ? stopRecording() : startRecording()}>
         {recording ? 'Stop' : 'Start'}
       </button>
@@ -150,7 +155,7 @@ function App() {
         <div style={{ textAlign: 'left', marginTop: '1rem' }}>
           <h2>Transcript</h2>
           <p>{result.words.map((w, i) => (
-            <span key={i}>{w.word} </span>
+            <span key={i}>{w.word} </span> 
           ))}</p>
         </div>
       )}
