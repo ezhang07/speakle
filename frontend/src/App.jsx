@@ -137,24 +137,13 @@ function App() {
     <section id="center">
       <h1>Speakle!</h1>
       <p>Upload a recording to transcribe it.</p>
-      <button type="button" onClick={() => getMedia(constraints)}>
-        Record from Webcam
-      </button>
       <video ref={videoRef} autoPlay playsInline muted>
       </video>
-      <input
-        type="file"
-        accept="audio/*,video/*"
-        onChange={handleFileChange}
-      />
-      <button type="button" onClick={() => startRecording()} disabled={recording}>
-        Start Recording
-      </button>
-      <button type="button" onClick={() => stopRecording()} disabled={!recording}>
-        Stop Recording
+      <button type="button" onClick={() => recording ? stopRecording() : startRecording()}>
+        {recording ? 'Stop' : 'Start'}
       </button>
       <button type="button" onClick={() => restartRecording()} disabled={!recording}>
-        Restart Recording
+        Restart
         </button>
       <button type="button" onClick={handleUpload} disabled={!file || loading}>
         {loading ? 'Transcribing…' : 'Transcribe'}
