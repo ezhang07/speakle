@@ -33,6 +33,9 @@ build/
 .vscode/
 
 ### Speakle ###
+# Local AI assistant context / project notes — keep private, don't push
+CLAUDE.md
+
 # Uploaded videos and extracted audio — never commit user media
 recordings/
 
