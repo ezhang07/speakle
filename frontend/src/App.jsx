@@ -17,12 +17,6 @@ function App() {
   const mediaRecorder = useRef(null);
   const restartRec = useRef(false);
 
-  // Runs when file input is changed from file select
-  function handleFileChange(e) {
-    setFile(e.target.files[0])
-    setResult(null)   // clear any old transcript when a new file is chosen
-    setError(null)
-  }
 
   // Runs when the user clicks "Transcribe".
   async function handleUpload() {
@@ -136,7 +130,7 @@ function App() {
   return (
     <section id="center">
       <h1>Speakle!</h1>
-      <p>Upload a recording to transcribe it.</p>
+      <p>Record yourself speaking and transcribe it.</p>
       <video ref={videoRef} autoPlay playsInline muted>
       </video>
       <button type="button" onClick={() => recording ? stopRecording() : startRecording()}>
