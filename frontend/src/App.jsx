@@ -3,6 +3,9 @@ import './App.css'
 
 function App() {
 
+
+  const transcriptionClickOffset = 0.2;
+
   const [file, setFile] = useState(null)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
@@ -17,6 +20,7 @@ function App() {
   const chunks = useRef([]);
   const mediaRecorder = useRef(null);
   const restartRec = useRef(false);
+  const playbackRef = useRef(null);
 
 
   // Runs when the user clicks "Transcribe".
@@ -132,13 +136,18 @@ function App() {
     };
   }, []);
 
+  function seekTime(time) {
+    playbackRef.current.currentTime = Math.max(0, time - transcriptionClickOffset);
+    playbackRef.current.play();
+  }
+
   return (
     <section id="center">
       <h1>Speakle!</h1>
       <p>Record yourself speaking and transcribe it.</p>
       <video ref={videoRef} autoPlay playsInline muted>
       </video>
-      {vidURL && result && <video src={vidURL} controls></video>}
+      {vidURL && result && <video ref={playbackRef} src={vidURL} controls></video>}
       <button type="button" onClick={() => recording ? stopRecording() : startRecording()}>
         {recording ? 'Stop' : 'Start'}
       </button>
@@ -156,7 +165,9 @@ function App() {
         <div style={{ textAlign: 'left', marginTop: '1rem' }}>
           <h2>Transcript</h2>
           <p>{result.words.map((w, i) => (
-            <span key={i}>{w.word} </span> 
+            <span key={i} onClick={() => seekTime(w.start)}>
+              {w.word} 
+            </span> 
           ))}</p>
         </div>
       )}
