@@ -148,9 +148,10 @@ function App() {
   return (
     <section id="center">
       <h1>Speakle!</h1>
-      <p>Record yourself speaking and transcribe it.</p>
-      <video ref={videoRef} autoPlay playsInline muted>
-      </video>
+      <p>Record yourself speaking and figure out where you stumble.</p>
+      <video ref={videoRef} autoPlay playsInline muted
+        style={{ display: result ? 'none' : 'block' }}>
+        </video>
       {vidURL && result && <video ref={playbackRef} src={vidURL} controls></video>}
       <button type="button" onClick={() => recording ? stopRecording() : startRecording()}>
         {recording ? 'Stop' : 'Start'}
@@ -158,7 +159,7 @@ function App() {
       <button type="button" onClick={() => restartRecording()} disabled={!recording}>
         Restart
         </button>
-      <button type="button" onClick={handleUpload} disabled={!file || loading}>
+      <button type="button" onClick={handleUpload} disabled={!file || loading || recording}>
         {loading ? 'Transcribing…' : 'Transcribe'}
       </button>
 
