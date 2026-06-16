@@ -5,6 +5,7 @@ function App() {
 
 
   const transcriptionClickOffset = 0.2;
+  const fillerWords = new Set(['um', 'uh', 'like']);
 
   const [file, setFile] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -12,7 +13,6 @@ function App() {
   const [error, setError] = useState(null)
   const [recording, setRecording] = useState(false)
   const [vidURL, setVidURL] = useState(null)
-
 
   const constraints = { audio: true, video: { width: 1280, height: 720, resizeMode: "crop-and-scale"} };
   const videoRef = useRef(null);
@@ -122,6 +122,10 @@ function App() {
     mediaRecorder.current.stop();
   }
 
+  function isFiller(word) {
+    return fillerWords.has(word.toLowerCase().replace(/[^a-z]/g, ''));
+  }
+
   useEffect(() => {
     getMedia(constraints);
 
@@ -165,8 +169,9 @@ function App() {
         <div style={{ textAlign: 'left', marginTop: '1rem' }}>
           <h2>Transcript</h2>
           <p>{result.words.map((w, i) => (
-            <span key={i} onClick={() => seekTime(w.start)}>
-              {w.word} 
+            <span key={i} className={isFiller(w.word) ? 'filler word' : 'word'}
+            onClick={() => seekTime(w.start)}>
+              {w.word}{''}
             </span> 
           ))}</p>
         </div>

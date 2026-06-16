@@ -182,3 +182,15 @@
     border-right-color: var(--border);
   }
 }
+
+.filler {
+  background: #ecb7074a;
+  font-style: italic;
+  border-radius: 5px;
+  
+}
+
+.word:hover {
+  cursor: pointer;
+  background: #0000004a;
+}
