@@ -175,6 +175,7 @@ function App() {
               {w.word}{''}
             </span> 
           ))}</p>
+          <p style = {{ marginTop: '0.5rem' }}>Fillers: {result.words.filter(w => isFiller(w.word)).length}</p>
         </div>
       )}
     </section>
