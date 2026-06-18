@@ -2,7 +2,7 @@ import { useState, useRef, useEffect} from 'react'
 import './App.css'
 
 function App() {
-
+  // MVP
 
   const transcriptionClickOffset = 0.2;
   const fillerWords = new Set(['um', 'uh', 'like']);
