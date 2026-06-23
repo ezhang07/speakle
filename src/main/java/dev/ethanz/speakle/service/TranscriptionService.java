@@ -10,11 +10,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import dev.ethanz.speakle.entity.Session;
+import dev.ethanz.speakle.repository.SessionRepository;
+
 @Service
 public class TranscriptionService {
 
     private static final Path RECORDINGS_DIR = Path.of("./recordings");
 
+    private final SessionRepository repository;
     private final String ffmpegPath;
     private final String pythonPath;
     private final String transcribeScript;
@@ -22,10 +26,12 @@ public class TranscriptionService {
     public TranscriptionService(
             @Value("${ffmpeg.path:ffmpeg}") String ffmpegPath,
             @Value("${whisper.python:python}") String pythonPath,
-            @Value("${whisper.script:scripts/transcribe.py}") String transcribeScript) {
+            @Value("${whisper.script:scripts/transcribe.py}") String transcribeScript,
+            SessionRepository sessionRepository) {
         this.ffmpegPath = ffmpegPath;
         this.pythonPath = pythonPath;
         this.transcribeScript = transcribeScript;
+        this.repository = sessionRepository;
     }
 
     
@@ -37,7 +43,10 @@ public class TranscriptionService {
 
             Path video = saveUpload(file, id);
             Path audio = extractAudio(video, id);
-            return transcribe(audio);
+            String transcript = transcribe(audio);
+            Session session = new Session(id, null, transcript);
+            repository.save(session);
+            return transcript;
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Transcription pipeline failed: " + e.getMessage(), e);
