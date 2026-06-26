@@ -5,8 +5,10 @@ import java.time.Instant;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import lombok.Getter;
 
 @Entity
+@Getter
 public class Session {
     
     @Id
