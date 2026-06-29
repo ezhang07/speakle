@@ -58,23 +58,6 @@ function Record() {
   }
 
 
-  // webcam recording
-  async function getMedia(constraints) {
-
-    try {
-      stream.current = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('acquired stream');
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream.current;
-      }
-      
-      // Do something with the stream, e.g., display it in a video element
-    } catch (err) {
-      console.error('Error accessing media devices.', err);
-    }
-  }
-
   function startRecording() {
     if (!stream.current) {
       console.error('No media stream yet');
@@ -129,16 +112,34 @@ function Record() {
   }
 
   useEffect(() => {
-    getMedia(constraints);
+    let cancelled = false;
+    let localStream = null;
+
+      // webcam recording
+    async function getMedia() {
+        const strm = await navigator.mediaDevices.getUserMedia(constraints);
+        if (cancelled) {
+          strm.getTracks().forEach(track => track.stop());
+          return;
+        }
+        localStream = strm;
+        stream.current = strm;
+        if (videoRef.current) {
+          videoRef.current.srcObject = localStream;
+        }
+        
+    }
+    getMedia();
 
     return () => {
       // cleanup on unmount: stop webcam and recording if still going
       if (mediaRecorder.current && mediaRecorder.current.state !== 'inactive') {
         mediaRecorder.current.stop();
       }
-      if (stream.current) {
-        stream.current.getTracks().forEach(track => track.stop());
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
       }
+      cancelled = true;
       console.log('Cleanup done');
     };
   }, []);
