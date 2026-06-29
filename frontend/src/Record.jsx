@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect} from 'react'
 import './Record.css'
+import {useNavigate} from 'react-router-dom'
 
 function Record() {
-  // MVP
 
   const transcriptionClickOffset = 0.2;
   const fillerWords = new Set(['um', 'uh', 'like']);
+  const navigate = useNavigate();
 
   const [file, setFile] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -62,6 +63,7 @@ function Record() {
 
     try {
       stream.current = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('acquired stream');
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream.current;
@@ -137,6 +139,7 @@ function Record() {
       if (stream.current) {
         stream.current.getTracks().forEach(track => track.stop());
       }
+      console.log('Cleanup done');
     };
   }, []);
 
@@ -149,6 +152,11 @@ function Record() {
     <section id="center">
       <h1>Speakle!</h1>
       <p>Record yourself speaking and figure out where you stumble.</p>
+
+      <button type="button" onClick={() => navigate('/')}>
+      Return back home
+      </button>
+      
       <video ref={videoRef} autoPlay playsInline muted
         style={{ display: result ? 'none' : 'block' }}>
         </video>
