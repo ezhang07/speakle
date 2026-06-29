@@ -36,6 +36,7 @@ build/
 # Local AI assistant context / project notes — keep private, don't push
 CLAUDE.md
 SPEAKLE.md
+node_modules/
 
 # Uploaded videos and extracted audio — never commit user media
 recordings/
