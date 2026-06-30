@@ -1,6 +1,6 @@
 import './Sessions.css'
 import { useNavigate } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 
 function Sessions() {
@@ -8,6 +8,11 @@ function Sessions() {
 
     const [sessions, setSessions] = useState([]);
     const [selectedId, setSelectedId] = useState(null);
+    const [error, setError] = useState(false)
+    
+    const playbackRef = useRef(null);
+
+    const selected = sessions.find((s) => s.sessionId === selectedId);
 
     useEffect(() => {
         async function loadSessions() {
@@ -18,6 +23,10 @@ function Sessions() {
         }
         loadSessions();
     }, []); 
+
+    useEffect(() => {
+        setError(false);
+    }, [selectedId]);
 
     return (
         <div className="sessions">
@@ -38,6 +47,18 @@ function Sessions() {
                 </li>
             )})}
             </ul>
+
+            {selected && (
+                <div className="playback">
+                    {error ? <p>
+                        This session's video cannot be loaded.
+                    </p> :
+                    <video ref={playbackRef} 
+                    src={`/api/sessions/${selected.sessionId}/video`} 
+                    onError={() => setError(true)} controls>
+                    </video>}
+                    </div>
+            )}
         </div>
     )
 }
