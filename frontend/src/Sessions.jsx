@@ -18,6 +18,9 @@ function Sessions() {
 
 
     function seekTime(time) {
+        if (!playbackRef.current) {
+            return;
+        }
         playbackRef.current.currentTime = Math.max(0, time - transcriptionClickOffset);
         playbackRef.current.play();
     }
