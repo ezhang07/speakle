@@ -7,6 +7,7 @@ function Sessions() {
     const navigate = useNavigate();
 
     const [sessions, setSessions] = useState([]);
+    const [selectedId, setSelectedId] = useState(null);
 
     useEffect(() => {
         async function loadSessions() {
@@ -30,7 +31,9 @@ function Sessions() {
                 const text = JSON.parse(s.transcript).text;
             
                 return (
-                <li key={s.sessionId}>
+                <li key={s.sessionId} 
+                onClick={() => setSelectedId(s.sessionId)} 
+                className={selectedId === s.sessionId ? 'session selected' : 'session'}>
                     {date.toLocaleDateString()} {date.toLocaleTimeString()} - "{text.slice(0, 60)}..."
                 </li>
             )})}

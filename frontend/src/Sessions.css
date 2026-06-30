@@ -1,0 +1,21 @@
+.sessions ul {
+    list-style: none;
+}
+.session {
+    
+    cursor: pointer;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    transition: 0.2s;
+    background-color: rgba(3, 43, 118, 0.316);
+}
+
+.session.selected {
+    background-color: #dbeafe; border-color: #3b82f6;
+}
+
+.session:hover {
+    background: #f0f0f0;
+}
