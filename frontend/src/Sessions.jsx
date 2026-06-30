@@ -2,6 +2,7 @@ import './Sessions.css'
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 
+
 function Sessions() {
     const navigate = useNavigate();
 
@@ -24,11 +25,15 @@ function Sessions() {
                 Return back home
             </button>
             <ul>
-            {sessions.map((s) => (
+            {sessions.map((s) => {
+                const date = new Date(s.createdAt);
+                const text = JSON.parse(s.transcript).text;
+            
+                return (
                 <li key={s.sessionId}>
-                    {s.createdAt} - {s.transcript.slice(0, 60)}...
+                    {date.toLocaleDateString()} {date.toLocaleTimeString()} - "{text.slice(0, 60)}..."
                 </li>
-            ))}
+            )})}
             </ul>
         </div>
     )
