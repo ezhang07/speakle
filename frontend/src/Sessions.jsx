@@ -1,6 +1,7 @@
 import './Sessions.css'
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
+import Transcript from './Transcript.jsx'
 
 
 function Sessions() {
@@ -13,6 +14,13 @@ function Sessions() {
     const playbackRef = useRef(null);
 
     const selected = sessions.find((s) => s.sessionId === selectedId);
+    const transcriptionClickOffset = 0.2;
+
+
+    function seekTime(time) {
+        playbackRef.current.currentTime = Math.max(0, time - transcriptionClickOffset);
+        playbackRef.current.play();
+    }
 
     useEffect(() => {
         async function loadSessions() {
@@ -59,6 +67,8 @@ function Sessions() {
                     </video>}
                     </div>
             )}
+
+            {selected && <Transcript words={JSON.parse(selected.transcript).words} onSeek={seekTime}></Transcript>}
         </div>
     )
 }

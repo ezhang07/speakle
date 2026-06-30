@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect} from 'react'
 import './Record.css'
 import {useNavigate} from 'react-router-dom'
+import Transcript from './Transcript.jsx'
 
 function Record() {
 
@@ -175,18 +176,9 @@ function Record() {
 
       {error && <p style={{ color: 'red' }}>Error: {error}</p>}
 
-      {result && (
-        <div style={{ textAlign: 'left', marginTop: '1rem' }}>
-          <h2>Transcript</h2>
-          <p>{result.words.map((w, i) => (
-            <span key={i} className={isFiller(w.word) ? 'filler word' : 'word'}
-            onClick={() => seekTime(w.start)}>
-              {w.word}{''}
-            </span> 
-          ))}</p>
-          <p style = {{ marginTop: '0.5rem' }}>Fillers: {result.words.filter(w => isFiller(w.word)).length}</p>
-        </div>
-      )}
+
+      {result && <Transcript words={result.words} onSeek={seekTime}></Transcript>}
+      
     </section>
   )
 }
