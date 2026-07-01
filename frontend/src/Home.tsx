@@ -1,5 +1,4 @@
 import './App.css'
-import { Link } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
 
 function Home() {
@@ -13,7 +12,7 @@ function Home() {
         Start Recording
         </button>
 
-    
+
         <button type="button" onClick={() => navigate('/sessions')}>
         View Past Sessions
         </button>

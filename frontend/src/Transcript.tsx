@@ -1,7 +1,14 @@
-function Transcript({ words, onSeek }) {
+import type { Word } from './types'
+
+interface TranscriptProps {
+    words: Word[];
+    onSeek: (time: number) => void;
+}
+
+function Transcript({ words, onSeek }: TranscriptProps) {
     const fillerWords = new Set(['um', 'uh', 'like'])
 
-    function isFiller(word) {
+    function isFiller(word: string) {
         return fillerWords.has(word.toLowerCase().replace(/[^a-z]/g, ''));
     }
 

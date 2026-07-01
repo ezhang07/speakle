@@ -1,28 +1,28 @@
 import { useState, useRef, useEffect} from 'react'
 import './Record.css'
 import {useNavigate} from 'react-router-dom'
-import Transcript from './Transcript.jsx'
+import Transcript from './Transcript'
+import type { TranscriptData } from './types'
 
 function Record() {
 
   const transcriptionClickOffset = 0.2;
-  const fillerWords = new Set(['um', 'uh', 'like']);
   const navigate = useNavigate();
 
-  const [file, setFile] = useState(null)
+  const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState(null)
-  const [error, setError] = useState(null)
+  const [result, setResult] = useState<TranscriptData | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [recording, setRecording] = useState(false)
-  const [vidURL, setVidURL] = useState(null)
+  const [vidURL, setVidURL] = useState<string | null>(null)
 
-  const constraints = { audio: true, video: { width: 1280, height: 720, resizeMode: "crop-and-scale"} };
-  const videoRef = useRef(null);
-  const stream = useRef(null);
-  const chunks = useRef([]);
-  const mediaRecorder = useRef(null);
+  const constraints: MediaStreamConstraints = { audio: true, video: { width: 1280, height: 720, resizeMode: "crop-and-scale"} };
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const stream = useRef<MediaStream | null>(null);
+  const chunks = useRef<Blob[]>([]);
+  const mediaRecorder = useRef<MediaRecorder | null>(null);
   const restartRec = useRef(false);
-  const playbackRef = useRef(null);
+  const playbackRef = useRef<HTMLVideoElement>(null);
 
 
   // Runs when the user clicks "Transcribe".
@@ -50,9 +50,9 @@ function Record() {
       }
 
       const text = await res.text()
-      setResult(JSON.parse(text)) 
+      setResult(JSON.parse(text) as TranscriptData)
     } catch (err) {
-      setError(err.message)
+      setError(err instanceof Error ? err.message : String(err))
     } finally {
       setLoading(false)
     }
@@ -99,22 +99,18 @@ function Record() {
 
   function stopRecording() {
     // onstop handler from startRecording assembles file once final chunk lands
-    mediaRecorder.current.stop();
+    mediaRecorder.current?.stop();
     setRecording(false);
   }
 
   function restartRecording() {
     restartRec.current = true;
-    mediaRecorder.current.stop();
-  }
-
-  function isFiller(word) {
-    return fillerWords.has(word.toLowerCase().replace(/[^a-z]/g, ''));
+    mediaRecorder.current?.stop();
   }
 
   useEffect(() => {
     let cancelled = false;
-    let localStream = null;
+    let localStream: MediaStream | null = null;
 
       // webcam recording
     async function getMedia() {
@@ -128,7 +124,7 @@ function Record() {
         if (videoRef.current) {
           videoRef.current.srcObject = localStream;
         }
-        
+
     }
     getMedia();
 
@@ -145,7 +141,8 @@ function Record() {
     };
   }, []);
 
-  function seekTime(time) {
+  function seekTime(time: number) {
+    if (!playbackRef.current) return;
     playbackRef.current.currentTime = Math.max(0, time - transcriptionClickOffset);
     playbackRef.current.play();
   }
@@ -158,7 +155,7 @@ function Record() {
       <button type="button" onClick={() => navigate('/')}>
       Return back home
       </button>
-      
+
       <video ref={videoRef} autoPlay playsInline muted
         style={{ display: result ? 'none' : 'block' }}>
         </video>
@@ -178,7 +175,7 @@ function Record() {
 
 
       {result && <Transcript words={result.words} onSeek={seekTime}></Transcript>}
-      
+
     </section>
   )
 }

@@ -1,23 +1,24 @@
 import './Sessions.css'
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
-import Transcript from './Transcript.jsx'
+import Transcript from './Transcript'
+import type { Session, TranscriptData } from './types'
 
 
 function Sessions() {
     const navigate = useNavigate();
 
-    const [sessions, setSessions] = useState([]);
-    const [selectedId, setSelectedId] = useState(null);
+    const [sessions, setSessions] = useState<Session[]>([]);
+    const [selectedId, setSelectedId] = useState<string | null>(null);
     const [error, setError] = useState(false)
-    
-    const playbackRef = useRef(null);
+
+    const playbackRef = useRef<HTMLVideoElement>(null);
 
     const selected = sessions.find((s) => s.sessionId === selectedId);
     const transcriptionClickOffset = 0.2;
 
 
-    function seekTime(time) {
+    function seekTime(time: number) {
         if (!playbackRef.current) {
             return;
         }
@@ -29,11 +30,11 @@ function Sessions() {
         async function loadSessions() {
             const res = await fetch('/api/sessions');
 
-            const data = await res.json();
+            const data = await res.json() as Session[];
             setSessions(data);
         }
         loadSessions();
-    }, []); 
+    }, []);
 
     useEffect(() => {
         setError(false);
@@ -48,11 +49,11 @@ function Sessions() {
             <ul>
             {sessions.map((s) => {
                 const date = new Date(s.createdAt);
-                const text = JSON.parse(s.transcript).text;
-            
+                const text = (JSON.parse(s.transcript) as TranscriptData).text;
+
                 return (
-                <li key={s.sessionId} 
-                onClick={() => setSelectedId(s.sessionId)} 
+                <li key={s.sessionId}
+                onClick={() => setSelectedId(s.sessionId)}
                 className={selectedId === s.sessionId ? 'session selected' : 'session'}>
                     {date.toLocaleDateString()} {date.toLocaleTimeString()} - "{text.slice(0, 60)}..."
                 </li>
@@ -64,14 +65,14 @@ function Sessions() {
                     {error ? <p>
                         This session's video cannot be loaded.
                     </p> :
-                    <video ref={playbackRef} 
-                    src={`/api/sessions/${selected.sessionId}/video`} 
+                    <video ref={playbackRef}
+                    src={`/api/sessions/${selected.sessionId}/video`}
                     onError={() => setError(true)} controls>
                     </video>}
                     </div>
             )}
 
-            {selected && <Transcript words={JSON.parse(selected.transcript).words} onSeek={seekTime}></Transcript>}
+            {selected && <Transcript words={(JSON.parse(selected.transcript) as TranscriptData).words} onSeek={seekTime}></Transcript>}
         </div>
     )
 }

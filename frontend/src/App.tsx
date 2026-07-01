@@ -1,8 +1,7 @@
-import { useState, useRef, useEffect} from 'react'
 import './App.css'
-import Record from './Record.jsx'
-import Sessions from './Sessions.jsx'
-import Home from './Home.jsx'
+import Record from './Record'
+import Sessions from './Sessions'
+import Home from './Home'
 import { Routes, Route } from 'react-router-dom'
 
 function App() {
