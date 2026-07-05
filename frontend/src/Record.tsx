@@ -26,6 +26,9 @@ function Record() {
   const restartRec = useRef(false);
   const playbackRef = useRef<HTMLVideoElement>(null);
 
+  type Phase = 'setup' | 'recording' | 'review'
+  const [phase, setPhase] = useState<Phase>('setup')
+
 
   // Runs when the user clicks "Transcribe".
   async function handleUpload() {
@@ -57,6 +60,7 @@ function Record() {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
       setLoading(false)
+      setPhase('review') 
     }
   }
 
@@ -111,6 +115,9 @@ function Record() {
   }
 
   useEffect(() => {
+    if (phase !== 'recording') return; // only run once we are in the recording phase
+
+
     let cancelled = false;
     let localStream: MediaStream | null = null;
 
@@ -141,12 +148,18 @@ function Record() {
       cancelled = true;
       console.log('Cleanup done');
     };
-  }, []);
+  }, [phase]);
 
   function seekTime(time: number) {
     if (!playbackRef.current) return;
     playbackRef.current.currentTime = Math.max(0, time - transcriptionClickOffset);
     playbackRef.current.play();
+  }
+
+  function selectPrompt(cat: 'casual' | 'behavioural') {
+    const filteredPrompts = prompts.filter(p => p.category === cat);
+    setPrompt(filteredPrompts[Math.floor(Math.random() * filteredPrompts.length)]);
+    setPhase('recording');
   }
 
   return (
@@ -158,29 +171,42 @@ function Record() {
       Return back home
       </button>
 
-      <video ref={videoRef} autoPlay playsInline muted
-        style={{ display: result ? 'none' : 'block' }}>
+
+      {phase === 'setup' && (<> <h3>Which type of prompt would you like to answer?</h3>
+      <button type="button" onClick={() => {selectPrompt('casual')}}>Casual</button>
+      <button type="button" onClick={() => {selectPrompt('behavioural')}}>Behavioural</button>
+      </>)}
+
+
+
+      {phase === 'recording' && (<>      
+      <video ref={videoRef} autoPlay playsInline muted>
         </video>
-        <button type="button" onClick={() => setPrompt(prompts[Math.floor(Math.random() * prompts.length)])}>
-          New Prompt
-        </button>
+        
         {prompt && <p>Prompt: {prompt.text}</p>}
-      {vidURL && result && <video ref={playbackRef} src={vidURL} controls></video>}
-      <button type="button" onClick={() => recording ? stopRecording() : startRecording()}>
+
+        <button type="button" onClick={() => recording ? stopRecording() : startRecording()}>
         {recording ? 'Stop' : 'Start'}
-      </button>
-      <button type="button" onClick={() => restartRecording()} disabled={!recording}>
+        </button>
+
+        <button type="button" onClick={() => restartRecording()} disabled={!recording}>
         Restart
         </button>
-      <button type="button" onClick={handleUpload} disabled={!file || loading || recording}>
+
+        <button type="button" onClick={handleUpload} disabled={!file || loading || recording}>
         {loading ? 'Transcribing…' : 'Transcribe'}
-      </button>
+        </button>
+        </>)}
+
+
+      {phase === 'review' && (<>
+      {vidURL && result && <video ref={playbackRef} src={vidURL} controls></video>}
+      {result && <Transcript words={result.words} onSeek={seekTime}></Transcript>}
+      </>)}
 
 
       {error && <p style={{ color: 'red' }}>Error: {error}</p>}
 
-
-      {result && <Transcript words={result.words} onSeek={seekTime}></Transcript>}
 
     </section>
   )
