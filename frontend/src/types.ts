@@ -22,3 +22,10 @@ export interface Session {
   transcript: string;
   createdAt: string;
 }
+
+export interface Prompt {
+  text: string;
+  category: 'casual' | 'behavioural';
+}
+
+
