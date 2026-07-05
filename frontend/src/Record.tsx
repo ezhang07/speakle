@@ -2,7 +2,8 @@ import { useState, useRef, useEffect} from 'react'
 import './Record.css'
 import {useNavigate} from 'react-router-dom'
 import Transcript from './Transcript'
-import type { TranscriptData } from './types'
+import type { Prompt, TranscriptData } from './types'
+import {prompts} from './Prompts'
 
 function Record() {
 
@@ -15,6 +16,7 @@ function Record() {
   const [error, setError] = useState<string | null>(null)
   const [recording, setRecording] = useState(false)
   const [vidURL, setVidURL] = useState<string | null>(null)
+  const [prompt, setPrompt] = useState<Prompt | null>(null)
 
   const constraints: MediaStreamConstraints = { audio: true, video: { width: 1280, height: 720, resizeMode: "crop-and-scale"} };
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -159,6 +161,10 @@ function Record() {
       <video ref={videoRef} autoPlay playsInline muted
         style={{ display: result ? 'none' : 'block' }}>
         </video>
+        <button type="button" onClick={() => setPrompt(prompts[Math.floor(Math.random() * prompts.length)])}>
+          New Prompt
+        </button>
+        {prompt && <p>Prompt: {prompt.text}</p>}
       {vidURL && result && <video ref={playbackRef} src={vidURL} controls></video>}
       <button type="button" onClick={() => recording ? stopRecording() : startRecording()}>
         {recording ? 'Stop' : 'Start'}
