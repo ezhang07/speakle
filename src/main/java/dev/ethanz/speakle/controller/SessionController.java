@@ -33,8 +33,10 @@ public class SessionController {
 
     // Transcription controller, takes a recording, returns JSON transcription
     @PostMapping(value = "/transcribe", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public String transcribe(@RequestParam("file") MultipartFile file) {
-        return transcriptionService.process(file);
+    public String transcribe(@RequestParam("file") MultipartFile file, 
+                             @RequestParam("promptText") String promptText,
+                             @RequestParam("promptCategory") String promptCategory) {
+        return transcriptionService.process(file, promptText, promptCategory);
     }
 
     @GetMapping

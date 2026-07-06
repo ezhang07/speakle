@@ -46,6 +46,10 @@ function Record() {
       const formData = new FormData()
       // controller reads @RequestParam("file") MultipartFile file, hence name is 'file'
       formData.append('file', f)
+      if (prompt) {
+        formData.append('promptText', prompt.text)
+        formData.append('promptCategory', prompt.category)
+      }
 
       // The actual POST
       const res = await fetch('/api/sessions/transcribe', {
@@ -248,6 +252,7 @@ function Record() {
 
       {phase === 'review' && (<>
       {loading && <h3>Transcribing...</h3>}
+      {!loading && prompt && <h3>{prompt.text}</h3>}
       {vidURL && result && <video ref={playbackRef} src={vidURL} controls></video>}
       {result && <Transcript words={result.words} onSeek={seekTime}></Transcript>}
       </>)}

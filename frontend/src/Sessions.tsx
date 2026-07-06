@@ -50,15 +50,18 @@ function Sessions() {
             {sessions.map((s) => {
                 const date = new Date(s.createdAt);
                 const text = (JSON.parse(s.transcript) as TranscriptData).text;
+                const promptText = s.promptText;
+                const preview = s.promptText ?? text.slice(0, 60);
 
                 return (
                 <li key={s.sessionId}
                 onClick={() => setSelectedId(s.sessionId)}
                 className={selectedId === s.sessionId ? 'session selected' : 'session'}>
-                    {date.toLocaleDateString()} {date.toLocaleTimeString()} - "{text.slice(0, 60)}..."
+                    {date.toLocaleDateString()} {date.toLocaleTimeString()} - "{preview}..."
                 </li>
             )})}
             </ul>
+
 
             {selected && (
                 <div className="playback">

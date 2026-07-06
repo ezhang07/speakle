@@ -14,6 +14,8 @@ public class Session {
     @Id
     private String sessionId;
     private String userId;
+    private String promptText;
+    private String promptCategory;
     @Column(columnDefinition = "TEXT")
     private String transcript;
     private Instant createdAt;
@@ -22,9 +24,11 @@ public class Session {
     protected Session() {
     }
 
-    public Session(String sessionId, String userId, String transcript) {
+    public Session(String sessionId, String userId, String promptText, String promptCategory, String transcript) {
         this.sessionId = sessionId;
         this.userId = userId;
+        this.promptText = promptText;
+        this.promptCategory = promptCategory;
         this.transcript = transcript;
         this.createdAt = Instant.now();
     }

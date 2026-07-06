@@ -19,6 +19,8 @@ export interface TranscriptData {
 export interface Session {
   sessionId: string;
   userId: string | null;
+  promptText: string;
+  promptCategory: 'casual' | 'behavioural';
   transcript: string;
   createdAt: string;
 }

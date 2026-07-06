@@ -36,7 +36,7 @@ public class TranscriptionService {
 
     
     // Full pipeline: persist upload, extract audio, transcribe.
-    public String process(MultipartFile file) {
+    public String process(MultipartFile file, String promptText, String promptCategory) {
         try {
             Files.createDirectories(RECORDINGS_DIR);
             String id = UUID.randomUUID().toString();
@@ -44,7 +44,7 @@ public class TranscriptionService {
             Path video = saveUpload(file, id);
             Path audio = extractAudio(video, id);
             String transcript = transcribe(audio);
-            Session session = new Session(id, null, transcript);
+            Session session = new Session(id, null, promptText, promptCategory, transcript);
             repository.save(session);
             return transcript;
         } catch (IOException | InterruptedException e) {
