@@ -26,8 +26,9 @@ function Record() {
   const restartRec = useRef(false);
   const playbackRef = useRef<HTMLVideoElement>(null);
 
-  type Phase = 'setup' | 'recording' | 'review'
+  type Phase = 'setup' | 'prep' | 'recording' | 'review'
   const [phase, setPhase] = useState<Phase>('setup')
+  const [secondsBeforeRec, setSecondsBeforeRec] = useState(15)
 
 
   // Runs when the user clicks "Transcribe".
@@ -114,6 +115,18 @@ function Record() {
     mediaRecorder.current?.stop();
   }
 
+  function seekTime(time: number) {
+    if (!playbackRef.current) return;
+    playbackRef.current.currentTime = Math.max(0, time - transcriptionClickOffset);
+    playbackRef.current.play();
+  }
+
+  function selectPrompt(cat: 'casual' | 'behavioural') {
+    const filteredPrompts = prompts.filter(p => p.category === cat);
+    setPrompt(filteredPrompts[Math.floor(Math.random() * filteredPrompts.length)]);
+    setPhase('prep');
+  }
+
   useEffect(() => {
     if (phase !== 'recording') return; // only run once we are in the recording phase
 
@@ -150,17 +163,25 @@ function Record() {
     };
   }, [phase]);
 
-  function seekTime(time: number) {
-    if (!playbackRef.current) return;
-    playbackRef.current.currentTime = Math.max(0, time - transcriptionClickOffset);
-    playbackRef.current.play();
-  }
+  // 15s timer for user after selecting prompt, prep for 20 seconds before auto-starting rec
+  useEffect(() => {
+    if (phase !== 'prep') return;
 
-  function selectPrompt(cat: 'casual' | 'behavioural') {
-    const filteredPrompts = prompts.filter(p => p.category === cat);
-    setPrompt(filteredPrompts[Math.floor(Math.random() * filteredPrompts.length)]);
-    setPhase('recording');
-  }
+    setSecondsBeforeRec(15);
+
+    const id = setInterval(() => {
+      setSecondsBeforeRec(s => s - 1);
+    }, 1000);
+
+    return () => clearInterval(id);
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase === 'prep' && secondsBeforeRec <= 0) {
+      setPhase('recording');
+    }
+  }, [phase, secondsBeforeRec]);
+
 
   return (
     <section id="center">
@@ -177,7 +198,13 @@ function Record() {
       <button type="button" onClick={() => {selectPrompt('behavioural')}}>Behavioural</button>
       </>)}
 
-
+      {phase === 'prep' && (<>
+      <h3>Prompt: {prompt?.text}</h3>
+      <p>
+        You have {secondsBeforeRec} seconds to prepare!
+      </p>
+      
+      </>)}
 
       {phase === 'recording' && (<>      
       <video ref={videoRef} autoPlay playsInline muted>
