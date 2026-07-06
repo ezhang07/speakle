@@ -10,7 +10,6 @@ function Record() {
   const transcriptionClickOffset = 0.2;
   const navigate = useNavigate();
 
-  const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<TranscriptData | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -30,10 +29,13 @@ function Record() {
   const [phase, setPhase] = useState<Phase>('setup')
   const [secondsBeforeRec, setSecondsBeforeRec] = useState(15)
 
+  const [secondsRecording, setSecondsRecording] = useState(20)
+
+
 
   // Runs when the user clicks "Transcribe".
-  async function handleUpload() {
-    if (!file) return  // nothing picked yet, do nothing
+  async function handleUpload(f: File) {
+    if (!f) return  // nothing picked yet, do nothing
 
     setLoading(true)
     setError(null)
@@ -43,7 +45,7 @@ function Record() {
       // FormData is the browser's way to build a multipart/form-data body
       const formData = new FormData()
       // controller reads @RequestParam("file") MultipartFile file, hence name is 'file'
-      formData.append('file', file)
+      formData.append('file', f)
 
       // The actual POST
       const res = await fetch('/api/sessions/transcribe', {
@@ -61,7 +63,6 @@ function Record() {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
       setLoading(false)
-      setPhase('review') 
     }
   }
 
@@ -97,7 +98,7 @@ function Record() {
       setVidURL(URL.createObjectURL(blob));
 
       const newFile = new File([blob], 'recording.webm', { type: 'video/webm' });
-      setFile(newFile);
+      handleUpload(newFile);
     };
 
     mediaRecorder.current.start();   // listeners all set up, start recording
@@ -107,7 +108,6 @@ function Record() {
   function stopRecording() {
     // onstop handler from startRecording assembles file once final chunk lands
     mediaRecorder.current?.stop();
-    setRecording(false);
   }
 
   function restartRecording() {
@@ -143,6 +143,7 @@ function Record() {
         }
         localStream = strm;
         stream.current = strm;
+        startRecording();
         if (videoRef.current) {
           videoRef.current.srcObject = localStream;
         }
@@ -150,8 +151,8 @@ function Record() {
     }
     getMedia();
 
+    // cleanup on unmount: stop webcam and recording if still going
     return () => {
-      // cleanup on unmount: stop webcam and recording if still going
       if (mediaRecorder.current && mediaRecorder.current.state !== 'inactive') {
         mediaRecorder.current.stop();
       }
@@ -176,11 +177,35 @@ function Record() {
     return () => clearInterval(id);
   }, [phase]);
 
+  // once 15s is up, change to recording phase, start recording
   useEffect(() => {
     if (phase === 'prep' && secondsBeforeRec <= 0) {
       setPhase('recording');
-    }
+      }
   }, [phase, secondsBeforeRec]);
+
+  
+  // 60s timer for recording
+  useEffect(() => {
+    if (!recording) return;
+
+    setSecondsRecording(20);
+
+    const id = setInterval(() => {
+      setSecondsRecording(s => s - 1);
+    }, 1000);
+
+    return () => clearInterval(id);
+  }, [recording]);
+
+  // once 60 seconds is up, change to review phase, stop the recording
+  useEffect(() => {
+    if (phase === 'recording' && secondsRecording <= 0) {
+      setPhase('review');
+      stopRecording();
+      setRecording(false);
+    }
+  }, [phase, secondsRecording]);
 
 
   return (
@@ -206,27 +231,23 @@ function Record() {
       
       </>)}
 
-      {phase === 'recording' && (<>      
+      {phase === 'recording' && (<>  
+      <h3>{secondsRecording}</h3>    
+
       <video ref={videoRef} autoPlay playsInline muted>
         </video>
         
         {prompt && <p>Prompt: {prompt.text}</p>}
 
-        <button type="button" onClick={() => recording ? stopRecording() : startRecording()}>
-        {recording ? 'Stop' : 'Start'}
-        </button>
-
         <button type="button" onClick={() => restartRecording()} disabled={!recording}>
         Restart
         </button>
 
-        <button type="button" onClick={handleUpload} disabled={!file || loading || recording}>
-        {loading ? 'Transcribing…' : 'Transcribe'}
-        </button>
         </>)}
 
 
       {phase === 'review' && (<>
+      {loading && <h3>Transcribing...</h3>}
       {vidURL && result && <video ref={playbackRef} src={vidURL} controls></video>}
       {result && <Transcript words={result.words} onSeek={seekTime}></Transcript>}
       </>)}
