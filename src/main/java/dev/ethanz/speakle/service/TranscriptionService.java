@@ -10,7 +10,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import dev.ethanz.speakle.dto.TranscriptDto;
 import dev.ethanz.speakle.entity.Session;
+import dev.ethanz.speakle.model.Metrics;
 import dev.ethanz.speakle.repository.SessionRepository;
 
 @Service
@@ -22,16 +26,20 @@ public class TranscriptionService {
     private final String ffmpegPath;
     private final String pythonPath;
     private final String transcribeScript;
+    private final MetricsService metricsService;
+    private final ObjectMapper objectMapper;
 
     public TranscriptionService(
             @Value("${ffmpeg.path:ffmpeg}") String ffmpegPath,
             @Value("${whisper.python:python}") String pythonPath,
             @Value("${whisper.script:scripts/transcribe.py}") String transcribeScript,
-            SessionRepository sessionRepository) {
+            SessionRepository sessionRepository, MetricsService metricsService, ObjectMapper objectMapper) {
         this.ffmpegPath = ffmpegPath;
         this.pythonPath = pythonPath;
         this.transcribeScript = transcribeScript;
         this.repository = sessionRepository;
+        this.metricsService = metricsService;
+        this.objectMapper = objectMapper;
     }
 
     
@@ -44,7 +52,11 @@ public class TranscriptionService {
             Path video = saveUpload(file, id);
             Path audio = extractAudio(video, id);
             String transcript = transcribe(audio);
-            Session session = new Session(id, null, promptText, promptCategory, transcript);
+            
+            TranscriptDto dto = objectMapper.readValue(transcript, TranscriptDto.class);
+            Metrics metrics = metricsService.compute(dto.getWords());
+            
+            Session session = new Session(id, null, promptText, promptCategory, transcript, metrics);
             repository.save(session);
             return transcript;
         } catch (IOException | InterruptedException e) {

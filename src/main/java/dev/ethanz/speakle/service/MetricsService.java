@@ -13,6 +13,7 @@ public class MetricsService {
 
     private static final Set<String> FILLERS = Set.of("um", "uh", "like", "yeah");
 
+    // calculate metrics based on a recording's transcript, timestamp on words
     public Metrics compute(List<WordDto> words) {
         if (words == null || words.isEmpty()) {
             return new Metrics(0, 0, 0, 0, 0, 0);
