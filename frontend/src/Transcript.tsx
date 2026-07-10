@@ -23,9 +23,6 @@ function Transcript({ words, onSeek }: TranscriptProps) {
                 </span>
             ))}</p>
 
-            <p style= {{marginTop: '0.5rem'}}>
-                Fillers: {words.filter(w => isFiller(w.word)).length}
-            </p>
         </div>
     )
 }

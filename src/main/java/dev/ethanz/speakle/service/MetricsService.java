@@ -11,7 +11,7 @@ import dev.ethanz.speakle.model.Metrics;
 @Service
 public class MetricsService {
 
-    private static final Set<String> FILLERS = Set.of("um", "uh", "like", "yeah");
+    private static final Set<String> FILLERS = Set.of("um", "uh", "like");
 
     // calculate metrics based on a recording's transcript, timestamp on words
     public Metrics compute(List<WordDto> words) {

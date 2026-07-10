@@ -2,6 +2,7 @@ import './Sessions.css'
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import Transcript from './Transcript'
+import Metrics from './Metrics'
 import type { Session, TranscriptData } from './types'
 
 
@@ -50,7 +51,6 @@ function Sessions() {
             {sessions.map((s) => {
                 const date = new Date(s.createdAt);
                 const text = (JSON.parse(s.transcript) as TranscriptData).text;
-                const promptText = s.promptText;
                 const preview = s.promptText ?? text.slice(0, 60);
 
                 return (
@@ -76,6 +76,18 @@ function Sessions() {
             )}
 
             {selected && <Transcript words={(JSON.parse(selected.transcript) as TranscriptData).words} onSeek={seekTime}></Transcript>}
+
+            {selected && (
+                <Metrics
+                    wordsPerMinute={selected.wordsPerMinute}
+                    fillerCount={selected.fillerCount}
+                    fillersPerMinute={selected.fillersPerMinute}
+                    longestPause={selected.longestPause}
+                    longestPauseTimeStamp={selected.longestPauseTimeStamp}
+                    onSeek={seekTime}
+                />
+            )}
+            
         </div>
     )
 }

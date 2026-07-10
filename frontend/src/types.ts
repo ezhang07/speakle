@@ -15,7 +15,8 @@ export interface TranscriptData {
 }
 
 /** A saved practice session row (see entity/Session.java).
- *  `transcript` is a JSON string that parses into a TranscriptData. */
+ *  `transcript` is a JSON string that parses into a TranscriptData.
+ *  The metric fields are computed at transcribe-time (see MetricsService). */
 export interface Session {
   sessionId: string;
   userId: string | null;
@@ -23,6 +24,12 @@ export interface Session {
   promptCategory: 'casual' | 'behavioural';
   transcript: string;
   createdAt: string;
+  durationSeconds: number;
+  wordsPerMinute: number;
+  fillerCount: number;
+  fillersPerMinute: number;
+  longestPause: number;
+  longestPauseTimeStamp: number;
 }
 
 export interface Prompt {
