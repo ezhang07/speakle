@@ -7,7 +7,7 @@ audio_path = sys.argv[1]
 
 model = WhisperModel("base", device="cpu", compute_type="int8")
 
-segments, info = model.transcribe(audio_path, word_timestamps=True)
+segments, info = model.transcribe(audio_path, word_timestamps=True, initial_prompt="Um, uh, like, you know, I mean, well, so, actually, basically, literally, right, okay, alright, I guess, I think, I feel like")
 
 # build result with full text + flat list of words with timestamps
 words = []
