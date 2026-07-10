@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.ethanz.speakle.dto.TranscriptDto;
 import dev.ethanz.speakle.entity.Session;
 import dev.ethanz.speakle.model.Metrics;
+import dev.ethanz.speakle.model.TranscribeResponse;
 import dev.ethanz.speakle.repository.SessionRepository;
 
 @Service
@@ -43,13 +44,13 @@ public class TranscriptionService {
     }
 
     
-    // Full pipeline: persist upload, extract audio, transcribe.
-    public String process(MultipartFile file, String promptText, String promptCategory) {
+    // Full pipeline: persist upload, extract audio, transcribe, compute metrics.
+    public TranscribeResponse process(MultipartFile file, String promptText, String promptCategory) {
         try {
             Files.createDirectories(RECORDINGS_DIR);
             String id = UUID.randomUUID().toString();
 
-            Path video = saveUpload(file, id);
+            Path video = saveUpload(file, id);      
             Path audio = extractAudio(video, id);
             String transcript = transcribe(audio);
             
@@ -58,7 +59,7 @@ public class TranscriptionService {
             
             Session session = new Session(id, null, promptText, promptCategory, transcript, metrics);
             repository.save(session);
-            return transcript;
+            return new TranscribeResponse(dto, metrics);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Transcription pipeline failed: " + e.getMessage(), e);

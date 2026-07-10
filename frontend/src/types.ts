@@ -37,4 +37,20 @@ export interface Prompt {
   category: 'casual' | 'behavioural';
 }
 
+/** Computed speaking metrics for a session (see model/Metrics.java). */
+export interface Metrics {
+  durationSeconds: number;
+  wordsPerMinute: number;
+  fillerCount: number;
+  fillersPerMinute: number;
+  longestPause: number;
+  longestPauseTimeStamp: number;
+}
+
+/** The JSON POST /api/sessions/transcribe returns (see dto/TranscribeResponse.java). */
+export interface TranscribeResponse {
+  transcript: TranscriptData;
+  metrics: Metrics;
+}
+
 

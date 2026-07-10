@@ -2,7 +2,8 @@ import { useState, useRef, useEffect} from 'react'
 import './Record.css'
 import {useNavigate} from 'react-router-dom'
 import Transcript from './Transcript'
-import type { Prompt, TranscriptData } from './types'
+import Metrics from './Metrics'
+import type { Prompt, TranscriptData, Metrics as MetricsData, TranscribeResponse } from './types'
 import {prompts} from './Prompts'
 
 function Record() {
@@ -12,6 +13,7 @@ function Record() {
 
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<TranscriptData | null>(null)
+  const [metrics, setMetrics] = useState<MetricsData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [recording, setRecording] = useState(false)
   const [vidURL, setVidURL] = useState<string | null>(null)
@@ -40,6 +42,7 @@ function Record() {
     setLoading(true)
     setError(null)
     setResult(null)
+    setMetrics(null)
 
     try {
       // FormData is the browser's way to build a multipart/form-data body
@@ -62,7 +65,9 @@ function Record() {
       }
 
       const text = await res.text()
-      setResult(JSON.parse(text) as TranscriptData)
+      const data = JSON.parse(text) as TranscribeResponse
+      setResult(data.transcript)
+      setMetrics(data.metrics)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -254,6 +259,16 @@ function Record() {
       {loading && <h3>Transcribing...</h3>}
       {!loading && prompt && <h3>{prompt.text}</h3>}
       {vidURL && result && <video ref={playbackRef} src={vidURL} controls></video>}
+      {result && metrics && (
+        <Metrics
+          wordsPerMinute={metrics.wordsPerMinute}
+          fillerCount={metrics.fillerCount}
+          fillersPerMinute={metrics.fillersPerMinute}
+          longestPause={metrics.longestPause}
+          longestPauseTimeStamp={metrics.longestPauseTimeStamp}
+          onSeek={seekTime}
+        />
+      )}
       {result && <Transcript words={result.words} onSeek={seekTime}></Transcript>}
       </>)}
 

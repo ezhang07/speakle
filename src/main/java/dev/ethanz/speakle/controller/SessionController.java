@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import dev.ethanz.speakle.entity.Session;
+import dev.ethanz.speakle.model.TranscribeResponse;
 import dev.ethanz.speakle.repository.SessionRepository;
 import dev.ethanz.speakle.service.TranscriptionService;
 
@@ -31,9 +32,9 @@ public class SessionController {
         this.sessionRepository = sessionRepository;
     }
 
-    // Transcription controller, takes a recording, returns JSON transcription
+    // Transcription controller, takes a recording, returns transcript + computed metrics as JSON
     @PostMapping(value = "/transcribe", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public String transcribe(@RequestParam("file") MultipartFile file, 
+    public TranscribeResponse transcribe(@RequestParam("file") MultipartFile file,
                              @RequestParam("promptText") String promptText,
                              @RequestParam("promptCategory") String promptCategory) {
         return transcriptionService.process(file, promptText, promptCategory);
