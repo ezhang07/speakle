@@ -66,6 +66,7 @@ public class AiFeedbackService {
             GenerateContentResponse response = client.models.generateContent("gemini-2.5-flash-lite", prompt, config);
 
             String json = response.text();
+            System.out.println("Gemini raw JSON: " + json);
 
             LlmResponse llmResponse = objectMapper.readValue(json, LlmResponse.class);
 
@@ -75,6 +76,7 @@ public class AiFeedbackService {
 
             return new AiFeedback(bloatRatio, timeToFirstPoint, llmResponse.summary());
         } catch (Exception e) {
+            System.err.println("AI feedback failed: " + e);
             return null;
         }
 
