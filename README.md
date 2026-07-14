@@ -1,0 +1,1 @@
+Speakle is a speaking-practice app. You pick a prompt, record yourself answering it in the browser, and Speakle transcribes the recording and reports back on how you spoke so you can see and improve your delivery over time.
