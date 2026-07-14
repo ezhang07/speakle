@@ -16,7 +16,7 @@ public class MetricsService {
     // calculate metrics based on a recording's transcript, timestamp on words
     public Metrics compute(List<WordDto> words) {
         if (words == null || words.isEmpty()) {
-            return new Metrics(0, 0, 0, 0, 0, 0);
+            return new Metrics(0, 0, 0, 0, 0, 0, null, null);
         }
 
         double durationSeconds = words.get(words.size() - 1).getEnd() - words.get(0).getStart();
@@ -47,6 +47,6 @@ public class MetricsService {
         }
         
 
-        return new Metrics(durationSeconds, wordsPerMinute, fillerCount, fillersPerMinute, longestPause, longestPauseTimeStamp);
+        return new Metrics(durationSeconds, wordsPerMinute, fillerCount, fillersPerMinute, longestPause, longestPauseTimeStamp, null, null);
     }
 }

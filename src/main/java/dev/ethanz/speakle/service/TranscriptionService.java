@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.ethanz.speakle.dto.TranscriptDto;
 import dev.ethanz.speakle.entity.Session;
+import dev.ethanz.speakle.model.AiFeedback;
 import dev.ethanz.speakle.model.Metrics;
 import dev.ethanz.speakle.model.TranscribeResponse;
 import dev.ethanz.speakle.repository.SessionRepository;
@@ -28,18 +29,20 @@ public class TranscriptionService {
     private final String pythonPath;
     private final String transcribeScript;
     private final MetricsService metricsService;
+    private final AiFeedbackService aiFeedback;
     private final ObjectMapper objectMapper;
 
     public TranscriptionService(
             @Value("${ffmpeg.path:ffmpeg}") String ffmpegPath,
             @Value("${whisper.python:python}") String pythonPath,
             @Value("${whisper.script:scripts/transcribe.py}") String transcribeScript,
-            SessionRepository sessionRepository, MetricsService metricsService, ObjectMapper objectMapper) {
+            SessionRepository sessionRepository, MetricsService metricsService, ObjectMapper objectMapper, AiFeedbackService aiFeedback) {
         this.ffmpegPath = ffmpegPath;
         this.pythonPath = pythonPath;
         this.transcribeScript = transcribeScript;
         this.repository = sessionRepository;
         this.metricsService = metricsService;
+        this.aiFeedback = aiFeedback;
         this.objectMapper = objectMapper;
     }
 
@@ -56,10 +59,19 @@ public class TranscriptionService {
             
             TranscriptDto dto = objectMapper.readValue(transcript, TranscriptDto.class);
             Metrics metrics = metricsService.compute(dto.getWords());
-            
-            Session session = new Session(id, null, promptText, promptCategory, transcript, metrics);
+
+            // LLM feedback is best-effort: if it fails, generate() returns null and we
+            // still save the transcript + deterministic metrics.
+            AiFeedback feedback = aiFeedback.generate(dto, promptText, metrics);
+            String summary = null;
+            if (feedback != null) {
+                metrics = metrics.withAiMetrics(feedback.bloatRatio(), feedback.timeToFirstPoint());
+                summary = feedback.summary();
+            }
+
+            Session session = new Session(id, null, promptText, promptCategory, transcript, metrics, summary);
             repository.save(session);
-            return new TranscribeResponse(dto, metrics);
+            return new TranscribeResponse(dto, metrics, summary);
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Transcription pipeline failed: " + e.getMessage(), e);

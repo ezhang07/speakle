@@ -26,12 +26,16 @@ public class Session {
     private double fillersPerMinute;
     private double longestPause;
     private double longestPauseTimeStamp;
+    private Double bloatRatio;
+    private Double timeToFirstPoint;
+    @Column(columnDefinition = "TEXT")
+    private String summary;
 
-    
+
     protected Session() {
     }
 
-    public Session(String sessionId, String userId, String promptText, String promptCategory, String transcript, Metrics metrics) {
+    public Session(String sessionId, String userId, String promptText, String promptCategory, String transcript, Metrics metrics, String summary) {
         this.sessionId = sessionId;
         this.userId = userId;
         this.promptText = promptText;
@@ -43,6 +47,9 @@ public class Session {
         this.fillersPerMinute = metrics.fillersPerMinute();
         this.longestPause = metrics.longestPause();
         this.longestPauseTimeStamp = metrics.longestPauseTimeStamp();
+        this.bloatRatio = metrics.bloatRatio();
+        this.timeToFirstPoint = metrics.timeToFirstPoint();
+        this.summary = summary;
         this.createdAt = Instant.now();
     }
 
