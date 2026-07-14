@@ -6,5 +6,7 @@ public record Metrics(
     int fillerCount,
     double fillersPerMinute,
     double longestPause,
-    double longestPauseTimeStamp
+    double longestPauseTimeStamp,
+    Double bloatRatio,
+    Double firstRelevantPoint
 ) {}
