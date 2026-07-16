@@ -63,7 +63,7 @@ public class AiFeedbackService {
             .responseMimeType("application/json")
             .build();
 
-            GenerateContentResponse response = client.models.generateContent("gemini-2.5-flash-lite", prompt, config);
+            GenerateContentResponse response = client.models.generateContent("gemini-3.1-flash-lite", prompt, config);
 
             String json = response.text();
             System.out.println("Gemini raw JSON: " + json);
