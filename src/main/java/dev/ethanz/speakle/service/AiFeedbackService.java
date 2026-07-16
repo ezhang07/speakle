@@ -5,7 +5,6 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.genai.Client;
 import com.google.genai.types.Content;
@@ -30,7 +29,7 @@ public class AiFeedbackService {
         this.objectMapper = objectMapper;
     }
 
-    public AiFeedback generate(TranscriptDto transcript, String promptText, Metrics metrics) throws JsonProcessingException {
+    public AiFeedback generate(TranscriptDto transcript, String promptText, Metrics metrics) {
         try {
             // convert transcript to indexed string for LLM input (mainly for the time to first point metric)
             List<WordDto> words = transcript.getWords();
@@ -66,8 +65,6 @@ public class AiFeedbackService {
             GenerateContentResponse response = client.models.generateContent("gemini-3.1-flash-lite", prompt, config);
 
             String json = response.text();
-            System.out.println("Gemini raw JSON: " + json);
-
             LlmResponse llmResponse = objectMapper.readValue(json, LlmResponse.class);
 
             Double bloatRatio = transcript.getWords().size() / (double) llmResponse.conciseVersion().trim().split("\\s+").length;
