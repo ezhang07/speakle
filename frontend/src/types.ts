@@ -30,6 +30,9 @@ export interface Session {
   fillersPerMinute: number;
   longestPause: number;
   longestPauseTimeStamp: number;
+  bloatRatio: number | null;
+  timeToFirstPoint: number | null;
+  summary: string | null;
 }
 
 export interface Prompt {
@@ -45,12 +48,15 @@ export interface Metrics {
   fillersPerMinute: number;
   longestPause: number;
   longestPauseTimeStamp: number;
+  bloatRatio: number | null;
+  timeToFirstPoint: number | null;
 }
 
 /** The JSON POST /api/sessions/transcribe returns (see dto/TranscribeResponse.java). */
 export interface TranscribeResponse {
   transcript: TranscriptData;
   metrics: Metrics;
+  summary: string | null;
 }
 
 
