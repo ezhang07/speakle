@@ -3,6 +3,7 @@ import './Record.css'
 import {useNavigate} from 'react-router-dom'
 import Transcript from './Transcript'
 import Metrics from './Metrics'
+import Feedback from './Feedback'
 import type { Prompt, TranscriptData, Metrics as MetricsData, TranscribeResponse } from './types'
 import {prompts} from './Prompts'
 
@@ -18,6 +19,7 @@ function Record() {
   const [recording, setRecording] = useState(false)
   const [vidURL, setVidURL] = useState<string | null>(null)
   const [prompt, setPrompt] = useState<Prompt | null>(null)
+  const [summary, setSummary] = useState<string | null>(null)
 
   const constraints: MediaStreamConstraints = { audio: true, video: { width: 1280, height: 720, resizeMode: "crop-and-scale"} };
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -68,6 +70,7 @@ function Record() {
       const data = JSON.parse(text) as TranscribeResponse
       setResult(data.transcript)
       setMetrics(data.metrics)
+      setSummary(data.summary)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -266,12 +269,15 @@ function Record() {
           fillersPerMinute={metrics.fillersPerMinute}
           longestPause={metrics.longestPause}
           longestPauseTimeStamp={metrics.longestPauseTimeStamp}
+          bloatRatio={metrics.bloatRatio}
+          timeToFirstPoint={metrics.timeToFirstPoint}
           onSeek={seekTime}
         />
       )}
       {result && <Transcript words={result.words} onSeek={seekTime}></Transcript>}
       </>)}
 
+      {result && <Feedback summary={summary} />}
 
       {error && <p style={{ color: 'red' }}>Error: {error}</p>}
 

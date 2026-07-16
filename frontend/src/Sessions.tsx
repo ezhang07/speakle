@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import Transcript from './Transcript'
 import Metrics from './Metrics'
+import Feedback from './Feedback'
 import type { Session, TranscriptData } from './types'
 
 
@@ -84,10 +85,12 @@ function Sessions() {
                     fillersPerMinute={selected.fillersPerMinute}
                     longestPause={selected.longestPause}
                     longestPauseTimeStamp={selected.longestPauseTimeStamp}
+                    bloatRatio={selected.bloatRatio}
+                    timeToFirstPoint={selected.timeToFirstPoint}
                     onSeek={seekTime}
                 />
             )}
-            
+            {selected && <Feedback summary={selected.summary} />}
         </div>
     )
 }
