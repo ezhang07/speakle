@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import dev.ethanz.speakle.dto.LoginRequest;
 import dev.ethanz.speakle.dto.RegisterRequest;
 import dev.ethanz.speakle.entity.User;
 import dev.ethanz.speakle.repository.UserRepository;
@@ -44,5 +45,19 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestParam LoginRequest request) {
+        Optional<User> user = userRepository.findByEmail(request.email());
+        if (!user.isPresent()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String storedHash = user.get().getPasswordHashed();
+        
+        if (!passwordEncoder.matches(request.password(), storedHash)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        return ResponseEntity.ok().build();
+    }
 }
