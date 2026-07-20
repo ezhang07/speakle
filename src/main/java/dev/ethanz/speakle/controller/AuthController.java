@@ -7,13 +7,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import dev.ethanz.speakle.dto.LoginRequest;
 import dev.ethanz.speakle.dto.RegisterRequest;
 import dev.ethanz.speakle.entity.User;
+import dev.ethanz.speakle.model.AuthResponse;
 import dev.ethanz.speakle.repository.UserRepository;
 import dev.ethanz.speakle.service.JwtService;
 
@@ -33,7 +34,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestParam RegisterRequest request) {
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         Optional<User> existingUser = userRepository.findByEmail(request.email());
         if (existingUser.isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
@@ -46,9 +47,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestParam LoginRequest request) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         Optional<User> user = userRepository.findByEmail(request.email());
-        if (!user.isPresent()) {
+        if (user.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
@@ -58,6 +59,8 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        return ResponseEntity.ok().build();
+        String token = jwtService.generateToken(user.get());
+
+        return ResponseEntity.ok(new AuthResponse(token));
     }
 }
