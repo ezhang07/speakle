@@ -48,7 +48,7 @@ public class TranscriptionService {
 
     
     // Full pipeline: persist upload, extract audio, transcribe, compute metrics.
-    public TranscribeResponse process(MultipartFile file, String promptText, String promptCategory) {
+    public TranscribeResponse process(MultipartFile file, String promptText, String promptCategory, String userId) {
         try {
             Files.createDirectories(RECORDINGS_DIR);
             String id = UUID.randomUUID().toString();
@@ -69,7 +69,7 @@ public class TranscriptionService {
                 summary = feedback.summary();
             }
 
-            Session session = new Session(id, null, promptText, promptCategory, transcript, metrics, summary);
+            Session session = new Session(id, userId, promptText, promptCategory, transcript, metrics, summary);
             repository.save(session);
             return new TranscribeResponse(dto, metrics, summary);
         } catch (IOException | InterruptedException e) {

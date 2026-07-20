@@ -7,6 +7,7 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,13 +37,13 @@ public class SessionController {
     @PostMapping(value = "/transcribe", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public TranscribeResponse transcribe(@RequestParam("file") MultipartFile file,
                              @RequestParam("promptText") String promptText,
-                             @RequestParam("promptCategory") String promptCategory) {
-        return transcriptionService.process(file, promptText, promptCategory);
+                             @RequestParam("promptCategory") String promptCategory, @AuthenticationPrincipal String userId) {
+        return transcriptionService.process(file, promptText, promptCategory, userId);
     }
 
     @GetMapping
-    public List<Session> getSessions() {
-        return sessionRepository.findAll();
+    public List<Session> getSessions(@AuthenticationPrincipal String userId) {
+        return sessionRepository.findByUserId(userId);
     }
 
     @GetMapping("/{id}/video")
