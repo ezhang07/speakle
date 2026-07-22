@@ -59,4 +59,9 @@ export interface TranscribeResponse {
   summary: string | null;
 }
 
+/** The JSON POST /api/auth/login returns (see model/AuthResponse.java). */
+export interface AuthResponse {
+  token: string;
+}
+
 
