@@ -4,13 +4,13 @@ import { useState, useEffect, useRef } from 'react'
 import Transcript from './Transcript'
 import Metrics from './Metrics'
 import Feedback from './Feedback'
-import { useAuth } from './AuthContext'
+import { useAuthedFetch } from './useAuthedFetch'
 import type { Session, TranscriptData } from './types'
 
 
 function Sessions() {
     const navigate = useNavigate();
-    const { token } = useAuth();
+    const authedFetch = useAuthedFetch();
 
     const [sessions, setSessions] = useState<Session[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -32,15 +32,16 @@ function Sessions() {
 
     useEffect(() => {
         async function loadSessions() {
-            const res = await fetch('/api/sessions', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-
-            const data = await res.json() as Session[];
-            setSessions(data);
+            try {
+                const res = await authedFetch('/api/sessions');
+                const data = await res.json() as Session[];
+                setSessions(data);
+            } catch {
+                // A 401 is already handled by authedFetch
+            }
         }
         loadSessions();
-    }, [token]);
+    }, [authedFetch]);
 
     useEffect(() => {
         setError(false);

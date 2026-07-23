@@ -6,13 +6,13 @@ import Metrics from './Metrics'
 import Feedback from './Feedback'
 import type { Prompt, TranscriptData, Metrics as MetricsData, TranscribeResponse } from './types'
 import {prompts} from './Prompts'
-import { useAuth } from './AuthContext'
+import { useAuthedFetch } from './useAuthedFetch'
 
 function Record() {
 
   const transcriptionClickOffset = 0.2;
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const authedFetch = useAuthedFetch();
 
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<TranscriptData | null>(null)
@@ -58,10 +58,9 @@ function Record() {
         formData.append('promptCategory', prompt.category)
       }
 
-      // The actual POST.
-      const res = await fetch('/api/sessions/transcribe', {
+      // The actual POST. authedFetch attaches the Authorization header
+      const res = await authedFetch('/api/sessions/transcribe', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       })
 
