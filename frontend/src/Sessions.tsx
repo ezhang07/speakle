@@ -4,11 +4,13 @@ import { useState, useEffect, useRef } from 'react'
 import Transcript from './Transcript'
 import Metrics from './Metrics'
 import Feedback from './Feedback'
+import { useAuth } from './AuthContext'
 import type { Session, TranscriptData } from './types'
 
 
 function Sessions() {
     const navigate = useNavigate();
+    const { token } = useAuth();
 
     const [sessions, setSessions] = useState<Session[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -30,13 +32,15 @@ function Sessions() {
 
     useEffect(() => {
         async function loadSessions() {
-            const res = await fetch('/api/sessions');
+            const res = await fetch('/api/sessions', {
+                headers: { Authorization: `Bearer ${token}` },
+            });
 
             const data = await res.json() as Session[];
             setSessions(data);
         }
         loadSessions();
-    }, []);
+    }, [token]);
 
     useEffect(() => {
         setError(false);
