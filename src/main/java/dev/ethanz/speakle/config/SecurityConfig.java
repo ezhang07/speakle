@@ -2,6 +2,7 @@ package dev.ethanz.speakle.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -27,6 +28,7 @@ public class SecurityConfig {
             // The authorization rules
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll() // register/login must stay open
+                .requestMatchers(HttpMethod.GET, "/api/sessions/*/video").permitAll()
                 .anyRequest().authenticated())               // everything else needs a valid token
             // configure sessions to be stateless — every request re-proves identity via token
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

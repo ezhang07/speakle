@@ -5,7 +5,7 @@ import Transcript from './Transcript'
 import Metrics from './Metrics'
 import Feedback from './Feedback'
 import { useAuthedFetch } from './useAuthedFetch'
-import type { Session, TranscriptData } from './types'
+import type { AuthResponse, Session, TranscriptData } from './types'
 
 
 function Sessions() {
@@ -15,6 +15,7 @@ function Sessions() {
     const [sessions, setSessions] = useState<Session[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [error, setError] = useState(false)
+    const [videoURL, setVideoURL] = useState<string | null>(null);
 
     const playbackRef = useRef<HTMLVideoElement>(null);
 
@@ -45,6 +46,21 @@ function Sessions() {
 
     useEffect(() => {
         setError(false);
+
+        if (!selectedId) return;
+        
+        async function getVideo() {
+            try {
+                const res = await authedFetch(`/api/sessions/${selectedId}/video-token`);
+                const data = await res.json() as AuthResponse;
+                const properURL = `/api/sessions/${selectedId}/video?token=${data.token}`;
+                setVideoURL(properURL);
+
+            } catch {
+
+            }
+        }
+        getVideo();
     }, [selectedId]);
 
     return (
@@ -75,7 +91,7 @@ function Sessions() {
                         This session's video cannot be loaded.
                     </p> :
                     <video ref={playbackRef}
-                    src={`/api/sessions/${selected.sessionId}/video`}
+                    src={videoURL ?? undefined}
                     onError={() => setError(true)} controls>
                     </video>}
                     </div>
