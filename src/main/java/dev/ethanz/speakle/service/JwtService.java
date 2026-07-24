@@ -44,4 +44,16 @@ public class JwtService {
             .getPayload()
             .getSubject(); // gets user id we stored in generateToken()
     }
+
+    public String generateVideoToken(String sessionId) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + 1000L * 60 * 15);
+
+        return Jwts.builder()
+        .subject(sessionId) // who the token identifies
+        .issuedAt(now) // issue date
+        .expiration(expiry) // expiry date (24 hrs after)
+        .signWith(key) // hash header+payload with secret, making the signature
+        .compact(); // assemble into header.payload.signature string 
+    }
 }
