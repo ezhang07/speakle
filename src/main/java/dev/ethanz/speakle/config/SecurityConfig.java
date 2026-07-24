@@ -27,8 +27,8 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             // The authorization rules
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll() // register/login must stay open
                 .requestMatchers(HttpMethod.GET, "/api/sessions/*/video").permitAll()
+                .requestMatchers("/api/auth/**").permitAll() // register/login must stay open
                 .anyRequest().authenticated())               // everything else needs a valid token
             // configure sessions to be stateless — every request re-proves identity via token
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

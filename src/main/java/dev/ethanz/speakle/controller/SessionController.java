@@ -53,25 +53,27 @@ public class SessionController {
     }
 
     @GetMapping("/{id}/video")
-    public ResponseEntity<Resource> getVideo(@PathVariable String id, @RequestParam String videoToken) {
+    public ResponseEntity<Resource> getVideo(@PathVariable String id, @RequestParam("token") String videoToken) {
         String sessionId = null;
+
         try {
             sessionId = jwtService.extractUserId(videoToken);
         } catch (Exception e) {
-            if (sessionId.equals(id)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-            }
-
-            Path videoPath = Path.of("./recordings", id + ".webm");
-            Resource video = new FileSystemResource(videoPath);
-
-            if (!video.exists()) {
-                return ResponseEntity.notFound().build();
-            }
-
-            return ResponseEntity.ok().contentType(MediaType.parseMediaType("video/webm")).body(video);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        return null;
+
+        if (!sessionId.equals(id)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        Path videoPath = Path.of("./recordings", id + ".webm");
+        Resource video = new FileSystemResource(videoPath);
+
+        if (!video.exists()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType("video/webm")).body(video);
     }
 
     @GetMapping("/{id}/video-token")
