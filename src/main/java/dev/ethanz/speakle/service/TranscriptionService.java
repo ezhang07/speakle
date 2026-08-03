@@ -1,13 +1,21 @@
 package dev.ethanz.speakle.service;
 
 import java.io.IOException;
+import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,20 +34,28 @@ public class TranscriptionService {
 
     private final SessionRepository repository;
     private final String ffmpegPath;
-    private final String pythonPath;
-    private final String transcribeScript;
+    private final RestClient whisperClient;
     private final MetricsService metricsService;
     private final AiFeedbackService aiFeedback;
     private final ObjectMapper objectMapper;
 
     public TranscriptionService(
             @Value("${ffmpeg.path:ffmpeg}") String ffmpegPath,
-            @Value("${whisper.python:python}") String pythonPath,
-            @Value("${whisper.script:scripts/transcribe.py}") String transcribeScript,
+            @Value("${whisper.service.url:http://localhost:8000}") String whisperServiceUrl,
             SessionRepository sessionRepository, MetricsService metricsService, ObjectMapper objectMapper, AiFeedbackService aiFeedback) {
         this.ffmpegPath = ffmpegPath;
-        this.pythonPath = pythonPath;
-        this.transcribeScript = transcribeScript;
+        // Pin HTTP/1.1: the JDK client defaults to HTTP/2 and tries an h2c upgrade over
+        // plaintext, which uvicorn (HTTP/1.1) can't parse
+        HttpClient jdkClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .connectTimeout(Duration.ofSeconds(5))
+                .build();
+        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(jdkClient);
+        factory.setReadTimeout(Duration.ofMinutes(5)); // transcription is slow; bound it like the old subprocess
+        this.whisperClient = RestClient.builder()
+                .baseUrl(whisperServiceUrl)
+                .requestFactory(factory)
+                .build();
         this.repository = sessionRepository;
         this.metricsService = metricsService;
         this.aiFeedback = aiFeedback;
@@ -112,26 +128,17 @@ public class TranscriptionService {
         return audio;
     }
 
-    // run local faster-whisper Python transcription script return its JSON stdout.
-    private String transcribe(Path audio) throws IOException, InterruptedException {
-        Process process = new ProcessBuilder(
-                pythonPath,
-                transcribeScript,
-                audio.toAbsolutePath().toString())
-                .redirectError(ProcessBuilder.Redirect.INHERIT)
-                .start();
+    // POST the extracted mp3 to the whisper FastAPI service and return its JSON transcript.
+    private String transcribe(Path audio) {
+        // multipart body; the part name "file" MUST match FastAPI's `file: UploadFile = File(...)`.
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("file", new FileSystemResource(audio));
 
-        // stdout carries the result JSON; read it fully before checking the exit code.
-        String json = new String(process.getInputStream().readAllBytes()).trim();
-
-        if (!process.waitFor(5, TimeUnit.MINUTES)) {
-            process.destroyForcibly();
-            throw new IOException("whisper transcription timed out");
-        }
-        if (process.exitValue() != 0) {
-            throw new IOException("whisper transcription failed (exit " + process.exitValue()
-                    + ") — check the server console for the Python error");
-        }
-        return json;
+        return whisperClient.post()
+                .uri("/transcribe")
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(body)
+                .retrieve()
+                .body(String.class);
     }
 }

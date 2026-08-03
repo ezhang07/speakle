@@ -29,6 +29,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.GET, "/api/sessions/*/video").permitAll()
                 .requestMatchers("/api/auth/**").permitAll() // register/login must stay open
+                .requestMatchers("/error").permitAll()       // let error dispatches render their real status (else every error 401s)
                 .anyRequest().authenticated())               // everything else needs a valid token
             // configure sessions to be stateless — every request re-proves identity via token
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
