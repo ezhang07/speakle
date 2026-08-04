@@ -1,0 +1,7 @@
+# Don't copy the local virtualenv or caches into the image — the image builds
+# its own deps via requirements.txt, and these would only bloat/pollute it.
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.git/
