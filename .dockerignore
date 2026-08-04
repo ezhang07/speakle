@@ -1,0 +1,8 @@
+# Keep the build context lean — none of this belongs in the backend image.
+target/           # stale local builds; the image builds its own jar in stage 1
+recordings/       # user videos/audio on disk — must never be baked into an image
+frontend/         # separate app, deployed separately (S3/CloudFront later)
+whisper-service/  # its own image with its own Dockerfile
+.git/
+.venv/
+*.md
