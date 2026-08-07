@@ -1,5 +1,6 @@
 package dev.ethanz.speakle.controller;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -43,7 +44,7 @@ public class SessionController {
     @PostMapping(value = "/transcribe", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public TranscribeResponse transcribe(@RequestParam("file") MultipartFile file,
                              @RequestParam("promptText") String promptText,
-                             @RequestParam("promptCategory") String promptCategory, @AuthenticationPrincipal String userId) {
+                             @RequestParam("promptCategory") String promptCategory, @AuthenticationPrincipal String userId) throws IOException {
         return transcriptionService.process(file, promptText, promptCategory, userId);
     }
 
