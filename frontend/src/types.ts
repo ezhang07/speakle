@@ -64,4 +64,9 @@ export interface AuthResponse {
   token: string;
 }
 
+/** The JSON GET /api/sessions/{id}/video-url returns (see model/VideoUrlResponse.java). */
+export interface VideoUrlResponse {
+  url: string;
+}
+
 
