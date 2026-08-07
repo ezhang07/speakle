@@ -38,14 +38,14 @@ public class TranscriptionService {
     private final MetricsService metricsService;
     private final AiFeedbackService aiFeedback;
     private final ObjectMapper objectMapper;
+    private final S3Service s3Service;
 
     public TranscriptionService(
             @Value("${ffmpeg.path:ffmpeg}") String ffmpegPath,
             @Value("${whisper.service.url:http://localhost:8000}") String whisperServiceUrl,
-            SessionRepository sessionRepository, MetricsService metricsService, ObjectMapper objectMapper, AiFeedbackService aiFeedback) {
+            SessionRepository sessionRepository, MetricsService metricsService, ObjectMapper objectMapper, AiFeedbackService aiFeedback, S3Service s3Service) {
         this.ffmpegPath = ffmpegPath;
-        // Pin HTTP/1.1: the JDK client defaults to HTTP/2 and tries an h2c upgrade over
-        // plaintext, which uvicorn (HTTP/1.1) can't parse
+        this.s3Service = s3Service;
         HttpClient jdkClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(Duration.ofSeconds(5))
@@ -69,7 +69,10 @@ public class TranscriptionService {
             Files.createDirectories(RECORDINGS_DIR);
             String id = UUID.randomUUID().toString();
 
-            Path video = saveUpload(file, id);      
+            // tentative placeholder, once we set up temp file for saveUpload, we can change from saveUplaod to putObject
+            s3Service.putObject(file, id);
+
+            Path video = saveUpload(file, id);      // local copy: ffmpeg needs a real file path
             Path audio = extractAudio(video, id);
             String transcript = transcribe(audio);
             
