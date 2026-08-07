@@ -77,7 +77,7 @@ public class TranscriptionService {
             s3Service.putObject(video, id);
 
             // get audio from video, then give this new audio path to transcribe to get transcript, finally throws away temp file
-            audio = extractAudio(audio, video, id);
+            extractAudio(audio, video);
             String transcript = transcribe(audio);
             
             TranscriptDto dto = objectMapper.readValue(transcript, TranscriptDto.class);
@@ -113,7 +113,7 @@ public class TranscriptionService {
     }
 
     // strip video and re-encode the audio to mp3 via ffmpeg.
-    private Path extractAudio(Path audio, Path video, String id) throws IOException, InterruptedException {
+    private void extractAudio(Path audio, Path video) throws IOException, InterruptedException {
 
         Process process = new ProcessBuilder(
                 ffmpegPath,
@@ -135,7 +135,6 @@ public class TranscriptionService {
         if (process.exitValue() != 0) {
             throw new IOException("ffmpeg failed (exit " + process.exitValue() + "):\n" + log);
         }
-        return audio;
     }
 
     // POST the extracted mp3 to the whisper FastAPI service and return its JSON transcript.
