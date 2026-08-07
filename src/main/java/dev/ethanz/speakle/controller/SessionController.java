@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -65,5 +66,23 @@ public class SessionController {
         String presignedURL = s3Service.presignGetUrl(id);
 
         return ResponseEntity.ok(new VideoUrlResponse(presignedURL));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteSession(@PathVariable String id, @AuthenticationPrincipal String userId) {
+        Optional<Session> session = sessionRepository.findById(id);
+
+        if (session.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (!userId.equals(session.get().getUserId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        s3Service.deleteObject(id);
+        sessionRepository.deleteById(id);
+
+        return ResponseEntity.noContent().build();
     }
 }
