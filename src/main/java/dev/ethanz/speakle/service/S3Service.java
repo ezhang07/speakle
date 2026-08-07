@@ -1,10 +1,10 @@
 package dev.ethanz.speakle.service;
 
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -21,7 +21,7 @@ public class S3Service {
     }
 
     // Upload the recording to s3://{bucket}/{id}.webm.
-    public void putObject(MultipartFile file, String id) throws IOException {
+    public void putObject(Path file, String id) throws IOException {
         // The request describes WHERE + WHAT metadata; RequestBody carries the bytes.
         PutObjectRequest request = PutObjectRequest.builder()
                 .bucket(bucket)
@@ -29,8 +29,6 @@ public class S3Service {
                 .contentType("video/webm")
                 .build();
 
-        // Stream the bytes rather than loading all 200MB into memory; the SDK
-        // needs the content length up front, which MultipartFile.getSize() gives us.
-        s3Client.putObject(request, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+        s3Client.putObject(request, RequestBody.fromFile(file));
     }
 }

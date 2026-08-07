@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -29,8 +30,6 @@ import dev.ethanz.speakle.repository.SessionRepository;
 
 @Service
 public class TranscriptionService {
-
-    private static final Path RECORDINGS_DIR = Path.of("./recordings");
 
     private final SessionRepository repository;
     private final String ffmpegPath;
@@ -64,16 +63,21 @@ public class TranscriptionService {
 
     
     // Full pipeline: persist upload, extract audio, transcribe, compute metrics.
-    public TranscribeResponse process(MultipartFile file, String promptText, String promptCategory, String userId) {
+    public TranscribeResponse process(MultipartFile file, String promptText, String promptCategory, String userId) throws IOException {
+        String id = UUID.randomUUID().toString();
+        Path audio = null;
+        Path video = null;
         try {
-            Files.createDirectories(RECORDINGS_DIR);
-            String id = UUID.randomUUID().toString();
+            // make temp files for video and audio
+            audio = Files.createTempFile(id, ".mp3");
+            video = Files.createTempFile(id, ".webm");
+            Files.copy(file.getInputStream(), video, StandardCopyOption.REPLACE_EXISTING);
 
-            // tentative placeholder, once we set up temp file for saveUpload, we can change from saveUplaod to putObject
-            s3Service.putObject(file, id);
+            // upload video to s3, then in finally, the video will be deleted from local temp storage
+            s3Service.putObject(video, id);
 
-            Path video = saveUpload(file, id);      // local copy: ffmpeg needs a real file path
-            Path audio = extractAudio(video, id);
+            // get audio from video, then give this new audio path to transcribe to get transcript, finally throws away temp file
+            audio = extractAudio(audio, video, id);
             String transcript = transcribe(audio);
             
             TranscriptDto dto = objectMapper.readValue(transcript, TranscriptDto.class);
@@ -94,19 +98,18 @@ public class TranscriptionService {
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Transcription pipeline failed: " + e.getMessage(), e);
+        } finally {
+            if (video != null) {
+                Files.deleteIfExists(video);
+            }
+            if (audio != null) {
+                Files.deleteIfExists(audio);
+            }
         }
     }
 
-    // write raw upload to ./recordings/{uuid}.webm.
-    private Path saveUpload(MultipartFile file, String id) throws IOException {
-        Path target = RECORDINGS_DIR.resolve(id + ".webm");
-        file.transferTo(target.toAbsolutePath());
-        return target;
-    }
-
     // strip video and re-encode the audio to mp3 via ffmpeg.
-    private Path extractAudio(Path video, String id) throws IOException, InterruptedException {
-        Path audio = RECORDINGS_DIR.resolve(id + ".mp3");
+    private Path extractAudio(Path audio, Path video, String id) throws IOException, InterruptedException {
 
         Process process = new ProcessBuilder(
                 ffmpegPath,
