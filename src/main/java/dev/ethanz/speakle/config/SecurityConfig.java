@@ -2,7 +2,6 @@ package dev.ethanz.speakle.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -27,7 +26,6 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             // The authorization rules
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.GET, "/api/sessions/*/video").permitAll()
                 .requestMatchers("/api/auth/**").permitAll() // register/login must stay open
                 .requestMatchers("/error").permitAll()       // let error dispatches render their real status (else every error 401s)
                 .anyRequest().authenticated())               // everything else needs a valid token
