@@ -99,11 +99,15 @@ public class TranscriptionService {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Transcription pipeline failed: " + e.getMessage(), e);
         } finally {
-            if (video != null) {
-                Files.deleteIfExists(video);
-            }
-            if (audio != null) {
-                Files.deleteIfExists(audio);
+            try {
+                if (video != null) {
+                    Files.deleteIfExists(video);
+                }
+                if (audio != null) {
+                    Files.deleteIfExists(audio);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to delete temporary files: " + e.getMessage(), e);
             }
         }
     }
