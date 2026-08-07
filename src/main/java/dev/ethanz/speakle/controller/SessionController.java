@@ -1,12 +1,9 @@
 package dev.ethanz.speakle.controller;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -20,10 +17,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import dev.ethanz.speakle.entity.Session;
-import dev.ethanz.speakle.model.AuthResponse;
 import dev.ethanz.speakle.model.TranscribeResponse;
+import dev.ethanz.speakle.model.VideoUrlResponse;
 import dev.ethanz.speakle.repository.SessionRepository;
-import dev.ethanz.speakle.service.JwtService;
+import dev.ethanz.speakle.service.S3Service;
 import dev.ethanz.speakle.service.TranscriptionService;
 
 @RestController
@@ -32,12 +29,12 @@ public class SessionController {
 
     private final TranscriptionService transcriptionService;
     private final SessionRepository sessionRepository;
-    private final JwtService jwtService;
+    private final S3Service s3Service;
 
-    public SessionController(TranscriptionService transcriptionService, SessionRepository sessionRepository, JwtService jwtService) {
+    public SessionController(TranscriptionService transcriptionService, SessionRepository sessionRepository, S3Service s3Service) {
         this.transcriptionService = transcriptionService;
         this.sessionRepository = sessionRepository;
-        this.jwtService = jwtService;
+        this.s3Service = s3Service;
     }
 
     // Transcription controller, takes a recording, returns transcript + computed metrics as JSON
@@ -53,32 +50,8 @@ public class SessionController {
         return sessionRepository.findByUserId(userId);
     }
 
-    @GetMapping("/{id}/video")
-    public ResponseEntity<Resource> getVideo(@PathVariable String id, @RequestParam("token") String videoToken) {
-        String sessionId = null;
-
-        try {
-            sessionId = jwtService.extractUserId(videoToken);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        if (!sessionId.equals(id)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        Path videoPath = Path.of("./recordings", id + ".webm");
-        Resource video = new FileSystemResource(videoPath);
-
-        if (!video.exists()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        return ResponseEntity.ok().contentType(MediaType.parseMediaType("video/webm")).body(video);
-    }
-
-    @GetMapping("/{id}/video-token")
-    public ResponseEntity<?> getVideoToken(@PathVariable String id, @AuthenticationPrincipal String userId) {
+    @GetMapping("/{id}/video-url")
+    public ResponseEntity<?> getVideoURL(@PathVariable String id, @AuthenticationPrincipal String userId) {
         Optional<Session> session = sessionRepository.findById(id);
         
         if (session.isEmpty()) {
@@ -89,8 +62,8 @@ public class SessionController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        String videoToken = jwtService.generateVideoToken(id);
+        String presignedURL = s3Service.presignGetUrl(id);
 
-        return ResponseEntity.ok(new AuthResponse(videoToken));
+        return ResponseEntity.ok(new VideoUrlResponse(presignedURL));
     }
 }
