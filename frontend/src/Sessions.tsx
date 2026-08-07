@@ -5,7 +5,7 @@ import Transcript from './Transcript'
 import Metrics from './Metrics'
 import Feedback from './Feedback'
 import { useAuthedFetch } from './useAuthedFetch'
-import type { AuthResponse, Session, TranscriptData } from './types'
+import type { VideoUrlResponse, Session, TranscriptData } from './types'
 
 
 function Sessions() {
@@ -51,11 +51,9 @@ function Sessions() {
         
         async function getVideo() {
             try {
-                const res = await authedFetch(`/api/sessions/${selectedId}/video-token`);
-                const data = await res.json() as AuthResponse;
-                const properURL = `/api/sessions/${selectedId}/video?token=${data.token}`;
-                setVideoURL(properURL);
-
+                const res = await authedFetch(`/api/sessions/${selectedId}/video-url`);
+                const data = await res.json() as VideoUrlResponse;
+                setVideoURL(data.url);
             } catch {
 
             }
