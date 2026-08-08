@@ -48,7 +48,7 @@ function Sessions() {
         setError(false);
 
         if (!selectedId) return;
-        
+
         async function getVideo() {
             try {
                 const res = await authedFetch(`/api/sessions/${selectedId}/video-url`);
@@ -60,6 +60,22 @@ function Sessions() {
         }
         getVideo();
     }, [selectedId]);
+
+    async function deleteSession(id: string) {
+        try {
+            const res = await authedFetch(`/api/sessions/${id}`, { method: 'DELETE' });
+            if (!res.ok) return;
+
+            // Drop it from the list; clear the viewer if it was the open one.
+            setSessions((prev) => prev.filter((s) => s.sessionId !== id));
+            if (selectedId === id) {
+                setSelectedId(null);
+                setVideoURL(null);
+            }
+        } catch {
+            // A 401 is already handled by authedFetch
+        }
+    }
 
     return (
         <div className="sessions">
@@ -92,6 +108,9 @@ function Sessions() {
                     src={videoURL ?? undefined}
                     onError={() => setError(true)} controls>
                     </video>}
+                    <button type="button" onClick={() => deleteSession(selected.sessionId)}>
+                        Delete session
+                    </button>
                     </div>
             )}
 
