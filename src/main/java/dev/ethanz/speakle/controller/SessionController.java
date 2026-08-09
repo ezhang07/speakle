@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import dev.ethanz.speakle.entity.Session;
-import dev.ethanz.speakle.model.TranscribeResponse;
+import dev.ethanz.speakle.model.JobResponse;
 import dev.ethanz.speakle.model.VideoUrlResponse;
 import dev.ethanz.speakle.repository.SessionRepository;
 import dev.ethanz.speakle.service.S3Service;
@@ -38,12 +38,17 @@ public class SessionController {
         this.s3Service = s3Service;
     }
 
-    // Transcription controller, takes a recording, returns transcript + computed metrics as JSON
+    // Takes a recording, creates a job, and returns the jobId. The frontend polls the job
+    // until it completes.
     @PostMapping(value = "/transcribe", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public TranscribeResponse transcribe(@RequestParam("file") MultipartFile file,
+    public JobResponse transcribe(@RequestParam("file") MultipartFile file,
                              @RequestParam("promptText") String promptText,
                              @RequestParam("promptCategory") String promptCategory, @AuthenticationPrincipal String userId) throws IOException {
-        return transcriptionService.process(file, promptText, promptCategory, userId);
+        String jobId = transcriptionService.process(file, promptText, promptCategory, userId);
+        // TEMP: run the pipeline synchronously for now so a Session still gets saved.
+        // Next step makes runJob @Async so this call returns immediately.
+        transcriptionService.runJob(jobId);
+        return new JobResponse(jobId);
     }
 
     @GetMapping
