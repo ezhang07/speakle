@@ -1,6 +1,7 @@
 package dev.ethanz.speakle.service;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 
@@ -63,5 +64,16 @@ public class S3Service {
                 .build();
 
         s3Client.deleteObject(request);
+    }
+
+    public Path getObject(String id) throws IOException {
+        GetObjectRequest request = GetObjectRequest.builder()
+        .bucket(bucket)
+        .key(id + ".webm")
+        .build();
+
+        Path tempFile = Files.createTempFile(id, ".webm");
+        s3Client.getObject(request, tempFile);
+        return tempFile;
     }
 }
