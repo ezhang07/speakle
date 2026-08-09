@@ -4,9 +4,18 @@ import {useNavigate} from 'react-router-dom'
 import Transcript from './Transcript'
 import Metrics from './Metrics'
 import Feedback from './Feedback'
-import type { Prompt, TranscriptData, Metrics as MetricsData, TranscribeResponse } from './types'
+import type { Prompt, TranscriptData, Metrics as MetricsData, JobResponse, JobStatusResponse, Session } from './types'
 import {prompts} from './Prompts'
 import { useAuthedFetch } from './useAuthedFetch'
+
+// how long between every poll request, plus max time we poll for in milliseconds
+const POLL_INTERVAL_MS = 2000
+const MAX_POLL_MS = 3 * 60 * 1000
+
+// Promise that lets us `await sleep(...)` between polls.
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
 
 function Record() {
 
@@ -39,9 +48,10 @@ function Record() {
 
 
 
-  // Runs when the user clicks "Transcribe".
+  // Runs when a recording finishes. Kicks off the transcription job, polls until
+  // it's done, then loads the finished session into the review screen.
   async function handleUpload(f: File) {
-    if (!f) return  // nothing picked yet, do nothing
+    if (!f) return  // nothing recorded yet, do nothing
 
     setLoading(true)
     setError(null)
@@ -58,21 +68,59 @@ function Record() {
         formData.append('promptCategory', prompt.category)
       }
 
-      // The actual POST. authedFetch attaches the Authorization header
+      // First fetch gets jobId needed for poll requests/fetch to check job status 
       const res = await authedFetch('/api/sessions/transcribe', {
         method: 'POST',
         body: formData,
       })
-
       if (!res.ok) {
         throw new Error(`Server responded ${res.status}`)
       }
+      const { jobId } = (await res.json()) as JobResponse
 
-      const text = await res.text()
-      const data = JSON.parse(text) as TranscribeResponse
-      setResult(data.transcript)
-      setMetrics(data.metrics)
-      setSummary(data.summary)
+      // Poll the job until it completes (or we hit the time cap)
+      const deadline = Date.now() + MAX_POLL_MS
+      let finished: JobStatusResponse | null = null
+      while (Date.now() < deadline) {
+        const jobRes = await authedFetch(`/api/jobs/${jobId}`)
+        if (!jobRes.ok) {
+          throw new Error(`Job poll failed: ${jobRes.status}`)
+        }
+        const job = (await jobRes.json()) as JobStatusResponse
+
+        if (job.status === 'COMPLETED') { finished = job; break }
+        if (job.status === 'FAILED') { throw new Error('Transcription failed') }
+
+        // still PENDING/PROCESSING, delay until next request
+        await sleep(POLL_INTERVAL_MS)
+      }
+      if (!finished) {
+        throw new Error('Transcription timed out')
+      }
+      if (!finished.resultSessionId) {
+        throw new Error('Completed job has no session')
+      }
+
+      // job is completed, fetch the finished session by the id the job points at
+      const sessionRes = await authedFetch(`/api/sessions/${finished.resultSessionId}`)
+      if (!sessionRes.ok) {
+        throw new Error(`Failed to load session: ${sessionRes.status}`)
+      }
+      const session = (await sessionRes.json()) as Session
+
+      // take session and turn into everything needed for playback review
+      setResult(JSON.parse(session.transcript) as TranscriptData)
+      setMetrics({
+        durationSeconds: session.durationSeconds,
+        wordsPerMinute: session.wordsPerMinute,
+        fillerCount: session.fillerCount,
+        fillersPerMinute: session.fillersPerMinute,
+        longestPause: session.longestPause,
+        longestPauseTimeStamp: session.longestPauseTimeStamp,
+        bloatRatio: session.bloatRatio,
+        timeToFirstPoint: session.timeToFirstPoint,
+      })
+      setSummary(session.summary)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
