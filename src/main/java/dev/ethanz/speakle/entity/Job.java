@@ -1,6 +1,7 @@
 package dev.ethanz.speakle.entity;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -28,13 +29,13 @@ public class Job {
 
     }
 
-    public Job(String jobId, String userId, String promptText, String promptCategory, String videoKey) {
-        this.jobId = jobId;
+    public Job(String userId, String promptText, String promptCategory, String videoKey) {
+        this.jobId = UUID.randomUUID().toString();
         this.userId = userId;
         this.status = JobStatus.PENDING;
         this.promptText = promptText;
         this.promptCategory = promptCategory;
-        this.videoKey = videoKey;
+        this.videoKey = videoKey; // actual id or sessionId
         this.createdAt = Instant.now();
     }
 
@@ -46,7 +47,8 @@ public class Job {
         this.status = JobStatus.FAILED;
     }
 
-    public void markCompleted() {
+    public void markCompleted(String sessionId) {
         this.status = JobStatus.COMPLETED;
+        this.resultSessionId = sessionId;
     }
 }
