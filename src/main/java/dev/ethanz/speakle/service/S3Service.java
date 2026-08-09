@@ -73,6 +73,9 @@ public class S3Service {
         .build();
 
         Path tempFile = Files.createTempFile(id, ".webm");
+        // getObject(request, Path) refuses to write to an existing file, but createTempFile
+        // already made an empty one — delete it so the SDK can create it itself.
+        Files.delete(tempFile);
         s3Client.getObject(request, tempFile);
         return tempFile;
     }
