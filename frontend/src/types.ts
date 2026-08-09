@@ -69,4 +69,20 @@ export interface VideoUrlResponse {
   url: string;
 }
 
+/** The JSON POST /api/sessions/transcribe now returns (see model/JobResponse.java).
+ *  Just a handle — the frontend polls the job until it completes. */
+export interface JobResponse {
+  jobId: string;
+}
+
+/** Mirrors the Java JobStatus enum */
+export type JobStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+
+/** The JSON GET /api/jobs/{jobId} returns (see model/JobStatusResponse.java).
+ *  resultSessionId is null until status === 'COMPLETED', then points at the Session. */
+export interface JobStatusResponse {
+  jobId: string;
+  status: JobStatus;
+  resultSessionId: string | null;
+}
 
