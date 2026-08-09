@@ -56,6 +56,24 @@ public class SessionController {
         return sessionRepository.findByUserId(userId);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getSpecificSession(@PathVariable String id, @AuthenticationPrincipal String userId) {
+        Optional<Session> sesh = sessionRepository.findById(id);
+
+        if (sesh.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Session session = sesh.get();
+
+        if (!userId.equals(session.getUserId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        return ResponseEntity.ok(session);
+    }
+
+
     @GetMapping("/{id}/video-url")
     public ResponseEntity<?> getVideoURL(@PathVariable String id, @AuthenticationPrincipal String userId) {
         Optional<Session> session = sessionRepository.findById(id);
