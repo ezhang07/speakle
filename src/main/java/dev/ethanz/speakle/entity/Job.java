@@ -37,4 +37,16 @@ public class Job {
         this.videoKey = videoKey;
         this.createdAt = Instant.now();
     }
+
+    public void markProcessing() {
+        this.status = JobStatus.PROCESSING;
+    }
+
+    public void markFailed() {
+        this.status = JobStatus.FAILED;
+    }
+
+    public void markCompleted() {
+        this.status = JobStatus.COMPLETED;
+    }
 }
