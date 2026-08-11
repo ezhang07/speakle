@@ -4,7 +4,7 @@ import {useNavigate} from 'react-router-dom'
 import Transcript from './Transcript'
 import Metrics from './Metrics'
 import Feedback from './Feedback'
-import type { Prompt, TranscriptData, Metrics as MetricsData, JobResponse, JobStatusResponse, Session } from './types'
+import type { Prompt, TranscriptData, Metrics as MetricsData, UploadUrlResponse, JobResponse, JobStatusResponse, Session } from './types'
 import {prompts} from './Prompts'
 import { useAuthedFetch } from './useAuthedFetch'
 
@@ -59,19 +59,29 @@ function Record() {
     setMetrics(null)
 
     try {
-      // FormData is the browser's way to build a multipart/form-data body
-      const formData = new FormData()
-      // controller reads @RequestParam("file") MultipartFile file, hence name is 'file'
-      formData.append('file', f)
-      if (prompt) {
-        formData.append('promptText', prompt.text)
-        formData.append('promptCategory', prompt.category)
+      // 1. Ask the backend for a presigned S3 upload URL + the key it minted.
+      const urlRes = await authedFetch('/api/sessions/upload-url', { method: 'POST' })
+      if (!urlRes.ok) {
+        throw new Error(`Could not get upload URL: ${urlRes.status}`)
+      }
+      const { uploadUrl, videoKey } = (await urlRes.json()) as UploadUrlResponse
+
+      // 2. PUT the video straight to S3 — no backend, no auth header (the signed URL IS the
+      //    credential; adding a Bearer token would break the signature). Raw File as the body.
+      const s3Res = await fetch(uploadUrl, { method: 'PUT', body: f })
+      if (!s3Res.ok) {
+        throw new Error(`Upload to S3 failed: ${s3Res.status}`)
       }
 
-      // First fetch gets jobId needed for poll requests/fetch to check job status 
+      // 3. Tell the backend the video is in S3 under videoKey; it creates a job and returns jobId.
       const res = await authedFetch('/api/sessions/transcribe', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoKey,
+          promptText: prompt?.text ?? '',
+          promptCategory: prompt?.category ?? '',
+        }),
       })
       if (!res.ok) {
         throw new Error(`Server responded ${res.status}`)

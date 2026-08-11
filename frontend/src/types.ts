@@ -69,6 +69,14 @@ export interface VideoUrlResponse {
   url: string;
 }
 
+/** The JSON POST /api/sessions/upload-url returns (see model/UploadUrlResponse.java).
+ *  uploadUrl is a short-lived presigned S3 PUT URL; the browser uploads the video straight
+ *  to it. videoKey is the id the backend minted — send it back to /transcribe. */
+export interface UploadUrlResponse {
+  uploadUrl: string;
+  videoKey: string;
+}
+
 /** The JSON POST /api/sessions/transcribe now returns (see model/JobResponse.java).
  *  Just a handle — the frontend polls the job until it completes. */
 export interface JobResponse {
