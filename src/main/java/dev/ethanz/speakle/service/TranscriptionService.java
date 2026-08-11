@@ -4,9 +4,7 @@ import java.io.IOException;
 import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.Duration;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -18,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -66,33 +63,13 @@ public class TranscriptionService {
     }
 
     
-    // Front half (runs inside the request): copy the upload to a temp file, push it to S3,
-    // and create a PENDING job. Returns the jobId immediately so the request never blocks on
-    // the slow pipeline. The actual work happens in runJob().
-    public String process(MultipartFile file, String promptText, String promptCategory, String userId) throws IOException {
-        String id = UUID.randomUUID().toString();
-        Path video = null;
-        try {
-            // only the video temp file is needed here — audio extraction happens in the back half
-            video = Files.createTempFile(id, ".webm");
-            Files.copy(file.getInputStream(), video, StandardCopyOption.REPLACE_EXISTING);
-
-            // upload the video to S3 under {id}.webm; the local temp copy is deleted in finally
-            s3Service.putObject(video, id);
-
-            // the video lives in S3 under `id`, so the job's videoKey = id
-            Job job = new Job(userId, promptText, promptCategory, id);
-            jobRepository.save(job);
-            return job.getJobId();
-        } finally {
-            try {
-                if (video != null) {
-                    Files.deleteIfExists(video);
-                }
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to delete temporary file: " + e.getMessage(), e);
-            }
-        }
+    // Front half (runs inside the request): the browser already PUT the video straight to S3 under
+    // `videoKey`, so there are no bytes to handle here — just create a PENDING job and return its id
+    // immediately. The actual pipeline (download, transcribe, metrics) happens in runJob().
+    public String process(String videoKey, String promptText, String promptCategory, String userId) {
+        Job job = new Job(userId, promptText, promptCategory, videoKey);
+        jobRepository.save(job);
+        return job.getJobId();
     }
 
     // Back half (will run in the background): re-download the video from S3, extract audio,

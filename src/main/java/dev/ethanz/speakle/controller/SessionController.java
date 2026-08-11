@@ -1,25 +1,23 @@
 package dev.ethanz.speakle.controller;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
 import dev.ethanz.speakle.entity.Session;
 import dev.ethanz.speakle.model.JobResponse;
+import dev.ethanz.speakle.model.TranscribeRequest;
 import dev.ethanz.speakle.model.VideoUrlResponse;
 import dev.ethanz.speakle.model.UploadUrlResponse;
 import dev.ethanz.speakle.repository.SessionRepository;
@@ -40,15 +38,15 @@ public class SessionController {
         this.s3Service = s3Service;
     }
 
-    // Takes a recording, creates a job, and returns the jobId. The frontend polls the job
-    // until it completes.
-    @PostMapping(value = "/transcribe", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public JobResponse transcribe(@RequestParam("file") MultipartFile file,
-                             @RequestParam("promptText") String promptText,
-                             @RequestParam("promptCategory") String promptCategory, @AuthenticationPrincipal String userId) throws IOException {
-        String jobId = transcriptionService.process(file, promptText, promptCategory, userId);
-        // TEMP: run the pipeline synchronously for now so a Session still gets saved.
-        // Next step makes runJob @Async so this call returns immediately.
+    // The video is already in S3 (uploaded directly by the browser via a presigned URL). This just
+    // creates a PENDING job for that key and kicks off the async pipeline. Returns the jobId fast;
+    // the frontend polls GET /jobs/{jobId} until it completes.
+    @PostMapping("/transcribe")
+    public JobResponse transcribe(@RequestBody TranscribeRequest request,
+                             @AuthenticationPrincipal String userId) {
+        String jobId = transcriptionService.process(request.videoKey(), request.promptText(),
+                request.promptCategory(), userId);
+        // runJob is @Async, so this returns immediately (fire-and-forget through the Spring proxy).
         transcriptionService.runJob(jobId);
         return new JobResponse(jobId);
     }
