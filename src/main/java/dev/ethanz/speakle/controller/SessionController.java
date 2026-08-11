@@ -3,6 +3,7 @@ package dev.ethanz.speakle.controller;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -20,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 import dev.ethanz.speakle.entity.Session;
 import dev.ethanz.speakle.model.JobResponse;
 import dev.ethanz.speakle.model.VideoUrlResponse;
+import dev.ethanz.speakle.model.UploadUrlResponse;
 import dev.ethanz.speakle.repository.SessionRepository;
 import dev.ethanz.speakle.service.S3Service;
 import dev.ethanz.speakle.service.TranscriptionService;
@@ -89,6 +91,13 @@ public class SessionController {
         String presignedURL = s3Service.presignGetUrl(id);
 
         return ResponseEntity.ok(new VideoUrlResponse(presignedURL));
+    }
+
+    @PostMapping("/upload-url")
+    public UploadUrlResponse createUploadUrl(@AuthenticationPrincipal String userId) {
+        String id = UUID.randomUUID().toString();
+        String url = s3Service.presignPutUrl(id);
+        return new UploadUrlResponse(url, id);
     }
 
     @DeleteMapping("/{id}")
