@@ -15,6 +15,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 @Service
 public class S3Service {
@@ -56,14 +57,18 @@ public class S3Service {
         return s3Presigner.presignGetObject(presignRequest).url().toString();
     }
 
-    // Delete the recording from S3. Idempotent: deleting a missing key is a no-op success.
-    public void deleteObject(String id) {
-        DeleteObjectRequest request = DeleteObjectRequest.builder()
-                .bucket(bucket)
-                .key(id + ".webm")
-                .build();
+    public String presignPutUrl(String id) {
+        PutObjectRequest putRequest = PutObjectRequest.builder()
+        .bucket(bucket)
+        .key(id + ".webm")
+        .build();
 
-        s3Client.deleteObject(request);
+        PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
+        .signatureDuration(Duration.ofMinutes(10)) // how long URL stays valid
+        .putObjectRequest(putRequest)
+        .build();
+
+        return s3Presigner.presignPutObject(presignRequest).url().toString();
     }
 
     public Path getObject(String id) throws IOException {
@@ -78,5 +83,15 @@ public class S3Service {
         Files.delete(tempFile);
         s3Client.getObject(request, tempFile);
         return tempFile;
+    }
+
+    // Delete the recording from S3. Idempotent: deleting a missing key is a no-op success.
+    public void deleteObject(String id) {
+        DeleteObjectRequest request = DeleteObjectRequest.builder()
+                .bucket(bucket)
+                .key(id + ".webm")
+                .build();
+
+        s3Client.deleteObject(request);
     }
 }
