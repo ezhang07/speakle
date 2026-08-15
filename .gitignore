@@ -38,6 +38,9 @@ CLAUDE.md
 SPEAKLE.md
 node_modules/
 
+# Secrets for docker compose (DB password, API keys, AWS creds) — never commit
+.env
+
 # Uploaded videos and extracted audio — never commit user media
 recordings/
 

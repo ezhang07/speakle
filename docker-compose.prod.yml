@@ -1,0 +1,29 @@
+# Production stack (EC2): backend + whisper only.
+# db container is gone,  backend connects to RDS via SPRING_DATASOURCE_URL.
+#
+# Run on the server (from the repo root, where .env lives):
+#   docker compose -f docker-compose.prod.yml up --build -d
+#
+# Local dev is unchanged: keep using `docker compose up` (docker-compose.yml),
+# which still spins up its own Postgres container.
+services:
+  whisper:
+    build: ./whisper-service
+
+  backend:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      whisper:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      WHISPER_SERVICE_URL: http://whisper:8000
+      DB_PASSWORD: ${DB_PASSWORD}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
