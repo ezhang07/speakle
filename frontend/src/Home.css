@@ -113,11 +113,18 @@
 /* --------------------------------------------------------------- steps -- */
 
 .steps {
+  padding: var(--s8) 0 0;
+  border-top: 1px solid var(--border);
+}
+
+.steps-head {
+  margin-bottom: var(--s6);
+}
+
+.steps-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--s6);
-  padding: var(--s8) 0 0;
-  border-top: 1px solid var(--border);
 }
 
 .step {

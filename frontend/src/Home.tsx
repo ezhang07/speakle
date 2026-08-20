@@ -44,15 +44,15 @@ function TranscriptPreview() {
 const STEPS = [
   {
     title: 'Get a prompt',
-    body: 'Casual or behavioural. Fifteen seconds to think, then it starts recording.',
+    body: 'Fifteen seconds to think, then it starts recording.',
   },
   {
     title: 'Talk for a minute',
-    body: 'No editing. Just your answer, the way you would say it out loud.',
+    body: 'As if you were in a conversation.',
   },
   {
-    title: 'Read it back',
-    body: 'Fillers highlighted, pace and pauses counted, every word clickable.',
+    title: 'Review',
+    body: 'Playback video, highlighted fillers, all the metrics you could need.',
   },
 ]
 
@@ -98,11 +98,10 @@ function Home() {
     <div className="home">
       <section className="hero">
         <div className="hero-copy">
-          <h1 className="hero-title">Record yourself. See where you stumble.</h1>
+          <h1 className="hero-title">Welcome to Speakle.</h1>
           <p className="hero-lede">
-            Speakle gives you a prompt, records your answer, and transcribes it
-            with every filler word marked. Click any word to jump back to that
-            moment in the video.
+            Inspired from a trend on Instagram Reels, Speakle aims to help people improve their daily speech,
+            but with less friction and a more systematic way of reviewing progress.
           </p>
 
           <div className="row hero-actions">
@@ -114,17 +113,22 @@ function Home() {
             </Link>
           </div>
         </div>
+        
 
         <TranscriptPreview />
       </section>
 
       <section className="steps">
-        {STEPS.map((s) => (
-          <div className="step" key={s.title}>
-            <h3>{s.title}</h3>
-            <p className="muted">{s.body}</p>
-          </div>
-        ))}
+        <h1 className="steps-head">How it works</h1>
+
+        <div className="steps-grid">
+          {STEPS.map((s) => (
+            <div className="step" key={s.title}>
+              <h3>{s.title}</h3>
+              <p className="muted">{s.body}</p>
+            </div>
+          ))}
+        </div>
       </section>
     </div>
   )
