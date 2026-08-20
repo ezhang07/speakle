@@ -1,0 +1,147 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+}
+
+/* ------------------------------------------------------------- top bar -- */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: var(--topbar-h);
+  border-bottom: 1px solid var(--border);
+  background: rgba(16, 19, 25, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.topbar-inner {
+  height: 100%;
+  max-width: var(--shell-max);
+  margin: 0 auto;
+  padding: 0 var(--s5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+}
+
+/* ------------------------------------------------------------ wordmark -- */
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s3);
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.wordmark:hover {
+  color: var(--text);
+}
+
+/* Four bars, like a level meter frozen mid-sentence. */
+.wordmark-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 18px;
+}
+
+.wordmark-mark i {
+  width: 3px;
+  border-radius: var(--r-full);
+  background: var(--accent);
+  transition: height var(--med) var(--ease);
+}
+
+.wordmark-mark i:nth-child(1) {
+  height: 7px;
+}
+.wordmark-mark i:nth-child(2) {
+  height: 16px;
+}
+.wordmark-mark i:nth-child(3) {
+  height: 10px;
+}
+.wordmark-mark i:nth-child(4) {
+  height: 5px;
+}
+
+.wordmark:hover .wordmark-mark i:nth-child(1) {
+  height: 13px;
+}
+.wordmark:hover .wordmark-mark i:nth-child(2) {
+  height: 6px;
+}
+.wordmark:hover .wordmark-mark i:nth-child(3) {
+  height: 17px;
+}
+.wordmark:hover .wordmark-mark i:nth-child(4) {
+  height: 11px;
+}
+
+/* ----------------------------------------------------------------- nav -- */
+
+.topnav {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.navlink {
+  position: relative;
+  font-family: var(--display);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  transition:
+    color var(--fast) var(--ease),
+    background var(--fast) var(--ease);
+}
+
+.navlink:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.navlink.active {
+  color: var(--text);
+}
+
+/* A short accent underline marks the current section. */
+.navlink.active::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 2px;
+  height: 2px;
+  border-radius: var(--r-full);
+  background: var(--accent);
+}
+
+/* ---------------------------------------------------------------- main -- */
+
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 640px) {
+  .topbar-inner {
+    padding: 0 var(--s4);
+  }
+
+  .navlink {
+    padding: 8px 8px;
+  }
+}

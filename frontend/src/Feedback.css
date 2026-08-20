@@ -1,0 +1,45 @@
+/* Visually the odd one out on the review page, on purpose: softer ground, an
+   accent rule down the side, and a quote mark. It should not read as a tile. */
+.feedback {
+  position: relative;
+  display: flex;
+  gap: var(--s4);
+  padding: var(--s5) var(--s5) var(--s5) var(--s4);
+  background: linear-gradient(
+    100deg,
+    var(--accent-soft),
+    rgba(79, 209, 197, 0.02) 60%
+  );
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  border-radius: 0 var(--r-lg) var(--r-lg) 0;
+}
+
+.feedback-quote {
+  font-family: var(--display);
+  font-size: 3rem;
+  line-height: 0.8;
+  color: var(--accent);
+  opacity: 0.5;
+  user-select: none;
+}
+
+.feedback-inner {
+  flex: 1;
+  min-width: 0;
+}
+
+.feedback-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3);
+  flex-wrap: wrap;
+  margin-bottom: var(--s3);
+}
+
+.feedback-body {
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  color: var(--text);
+  max-width: 70ch;
+}

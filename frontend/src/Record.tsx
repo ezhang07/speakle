@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect} from 'react'
 import './Record.css'
+import './Review.css'
 import {useNavigate} from 'react-router-dom'
 import Transcript from './Transcript'
 import Metrics from './Metrics'
@@ -7,15 +8,29 @@ import Feedback from './Feedback'
 import type { Prompt, TranscriptData, Metrics as MetricsData, UploadUrlResponse, JobResponse, JobStatusResponse, Session } from './types'
 import {prompts} from './Prompts'
 import { useAuthedFetch } from './useAuthedFetch'
+import { computeAverages } from './averages'
 
 // how long between every poll request, plus max time we poll for in milliseconds
 const POLL_INTERVAL_MS = 2000
 const MAX_POLL_MS = 3 * 60 * 1000
 
+// Length of each phase, in seconds.
+const PREP_SECONDS = 15
+const RECORDING_SECONDS = 20
+
 // Promise that lets us `await sleep(...)` between polls.
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
+
+function formatClock(seconds: number): string {
+  const safe = Math.max(0, seconds)
+  return `${Math.floor(safe / 60)}:${String(safe % 60).padStart(2, '0')}`
+}
+
+// Circumference of the countdown ring (r=54), so the dash offset can be driven
+// straight from the seconds remaining.
+const RING = 2 * Math.PI * 54
 
 function Record() {
 
@@ -32,6 +47,10 @@ function Record() {
   const [prompt, setPrompt] = useState<Prompt | null>(null)
   const [summary, setSummary] = useState<string | null>(null)
 
+  // Past sessions, loaded once on mount purely so the review screen can say
+  // "vs your average". Never blocks the recording flow.
+  const [history, setHistory] = useState<Session[]>([])
+
   const constraints: MediaStreamConstraints = { audio: true, video: { width: 1280, height: 720, resizeMode: "crop-and-scale"} };
   const videoRef = useRef<HTMLVideoElement>(null);
   const stream = useRef<MediaStream | null>(null);
@@ -42,9 +61,11 @@ function Record() {
 
   type Phase = 'setup' | 'prep' | 'recording' | 'review'
   const [phase, setPhase] = useState<Phase>('setup')
-  const [secondsBeforeRec, setSecondsBeforeRec] = useState(15)
+  const [secondsBeforeRec, setSecondsBeforeRec] = useState(PREP_SECONDS)
 
-  const [secondsRecording, setSecondsRecording] = useState(20)
+  const [secondsRecording, setSecondsRecording] = useState(RECORDING_SECONDS)
+
+  const averages = computeAverages(history)
 
 
 
@@ -187,6 +208,25 @@ function Record() {
     mediaRecorder.current?.stop();
   }
 
+  // Same sequence the auto-stop timer runs, just triggered by the user.
+  function finishRecording() {
+    setPhase('review');
+    stopRecording();
+    setRecording(false);
+  }
+
+  // Back to the start for another take.
+  function reset() {
+    if (vidURL) URL.revokeObjectURL(vidURL);
+    setVidURL(null);
+    setResult(null);
+    setMetrics(null);
+    setSummary(null);
+    setError(null);
+    setPrompt(null);
+    setPhase('setup');
+  }
+
   function seekTime(time: number) {
     if (!playbackRef.current) return;
     playbackRef.current.currentTime = Math.max(0, time - transcriptionClickOffset);
@@ -198,6 +238,20 @@ function Record() {
     setPrompt(filteredPrompts[Math.floor(Math.random() * filteredPrompts.length)]);
     setPhase('prep');
   }
+
+  // Load past sessions once, for the "vs your average" comparison on review.
+  useEffect(() => {
+    async function loadHistory() {
+      try {
+        const res = await authedFetch('/api/sessions');
+        if (!res.ok) return;
+        setHistory(await res.json() as Session[]);
+      } catch {
+        // The comparison is a nicety — never let it break recording.
+      }
+    }
+    loadHistory();
+  }, [authedFetch]);
 
   useEffect(() => {
     if (phase !== 'recording') return; // only run once we are in the recording phase
@@ -240,7 +294,7 @@ function Record() {
   useEffect(() => {
     if (phase !== 'prep') return;
 
-    setSecondsBeforeRec(15);
+    setSecondsBeforeRec(PREP_SECONDS);
 
     const id = setInterval(() => {
       setSecondsBeforeRec(s => s - 1);
@@ -256,12 +310,12 @@ function Record() {
       }
   }, [phase, secondsBeforeRec]);
 
-  
+
   // 60s timer for recording
   useEffect(() => {
     if (!recording) return;
 
-    setSecondsRecording(20);
+    setSecondsRecording(RECORDING_SECONDS);
 
     const id = setInterval(() => {
       setSecondsRecording(s => s - 1);
@@ -280,69 +334,165 @@ function Record() {
   }, [phase, secondsRecording]);
 
 
+  /* ================================================================ setup */
+
+  if (phase === 'setup') {
+    return (
+      <div className="page record-setup rise">
+        <h1>Pick a prompt</h1>
+        <p className="record-lede">
+          You get {PREP_SECONDS} seconds to think, then the camera starts on its
+          own and records for {RECORDING_SECONDS} seconds.
+        </p>
+
+        <div className="prompt-choice">
+          <button type="button" className="prompt-card" onClick={() => selectPrompt('casual')}>
+            <span className="prompt-card-title">Casual</span>
+            <span className="prompt-card-desc">
+              Weekends, food, hobbies, places you&rsquo;d like to go.
+            </span>
+            <span className="prompt-card-go">Start &rarr;</span>
+          </button>
+
+          <button type="button" className="prompt-card" onClick={() => selectPrompt('behavioural')}>
+            <span className="prompt-card-title">Behavioural</span>
+            <span className="prompt-card-desc">
+              &ldquo;Tell me about a time&hellip;&rdquo; &mdash; the interview kind.
+            </span>
+            <span className="prompt-card-go">Start &rarr;</span>
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  /* ================================================================= prep */
+
+  if (phase === 'prep') {
+    return (
+      <div className="stage stage-prep">
+        <div className="stage-inner">
+          <p className="stage-prompt">{prompt?.text}</p>
+
+          <div className="countdown">
+            <svg className="countdown-ring" viewBox="0 0 120 120" aria-hidden="true">
+              <circle className="ring-track" cx="60" cy="60" r="54" />
+              <circle
+                className="ring-fill"
+                cx="60"
+                cy="60"
+                r="54"
+                style={{
+                  strokeDasharray: RING,
+                  strokeDashoffset: RING * (1 - Math.max(0, secondsBeforeRec) / PREP_SECONDS),
+                }}
+              />
+            </svg>
+            <span className="countdown-num tabular">{Math.max(0, secondsBeforeRec)}</span>
+          </div>
+
+          <p className="muted">Recording starts automatically.</p>
+        </div>
+      </div>
+    )
+  }
+
+  /* ============================================================ recording */
+
+  if (phase === 'recording') {
+    return (
+      <div className="stage stage-recording">
+        <div className="stage-bar">
+          <span className="live">
+            <i className="live-dot" aria-hidden="true" />
+            Recording
+          </span>
+          <span className="stage-timer tabular">{formatClock(secondsRecording)}</span>
+        </div>
+
+        <video ref={videoRef} className="stage-video" autoPlay playsInline muted />
+
+        <div className="stage-bar stage-bar-foot">
+          <p className="stage-prompt-small">{prompt?.text}</p>
+          <div className="row">
+            <button type="button" className="btn btn-ghost" onClick={restartRecording} disabled={!recording}>
+              Restart
+            </button>
+            <button type="button" className="btn btn-primary" onClick={finishRecording} disabled={!recording}>
+              Finish
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  /* =============================================================== review */
+
   return (
-    <section id="center">
-      <h1>Speakle!</h1>
-      <p>Record yourself speaking and figure out where you stumble.</p>
-
-      <button type="button" onClick={() => navigate('/')}>
-      Return back home
-      </button>
-
-
-      {phase === 'setup' && (<> <h3>Which type of prompt would you like to answer?</h3>
-      <button type="button" onClick={() => {selectPrompt('casual')}}>Casual</button>
-      <button type="button" onClick={() => {selectPrompt('behavioural')}}>Behavioural</button>
-      </>)}
-
-      {phase === 'prep' && (<>
-      <h3>Prompt: {prompt?.text}</h3>
-      <p>
-        You have {secondsBeforeRec} seconds to prepare!
-      </p>
-      
-      </>)}
-
-      {phase === 'recording' && (<>  
-      <h3>{secondsRecording}</h3>    
-
-      <video ref={videoRef} autoPlay playsInline muted>
-        </video>
-        
-        {prompt && <p>Prompt: {prompt.text}</p>}
-
-        <button type="button" onClick={() => restartRecording()} disabled={!recording}>
-        Restart
-        </button>
-
-        </>)}
-
-
-      {phase === 'review' && (<>
-      {loading && <h3>Transcribing...</h3>}
-      {!loading && prompt && <h3>{prompt.text}</h3>}
-      {vidURL && result && <video ref={playbackRef} src={vidURL} controls></video>}
-      {result && metrics && (
-        <Metrics
-          wordsPerMinute={metrics.wordsPerMinute}
-          fillerCount={metrics.fillerCount}
-          fillersPerMinute={metrics.fillersPerMinute}
-          longestPause={metrics.longestPause}
-          longestPauseTimeStamp={metrics.longestPauseTimeStamp}
-          bloatRatio={metrics.bloatRatio}
-          timeToFirstPoint={metrics.timeToFirstPoint}
-          onSeek={seekTime}
-        />
+    <div className="page rise">
+      {loading && (
+        <div className="transcribing">
+          <div className="transcribing-wave" aria-hidden="true">
+            <i /><i /><i /><i /><i />
+          </div>
+          <h1>Transcribing</h1>
+          <p className="muted">This usually takes about half a minute.</p>
+          {prompt && <p className="transcribing-prompt">&ldquo;{prompt.text}&rdquo;</p>}
+        </div>
       )}
-      {result && <Transcript words={result.words} onSeek={seekTime}></Transcript>}
-      </>)}
 
-      {result && <Feedback summary={summary} />}
+      {!loading && error && (
+        <div className="empty">
+          <h2>That take didn&rsquo;t go through</h2>
+          <p className="error-note transcribing-error">{error}</p>
+          <button type="button" className="btn btn-primary" onClick={reset}>
+            Try again
+          </button>
+        </div>
+      )}
 
-      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+      {!loading && !error && result && metrics && (
+        <>
+          <div className="review-prompt">
+            {prompt && <span className="meta review-prompt-meta">{prompt.category}</span>}
+            <h1 className="review-prompt-text">{prompt?.text}</h1>
+          </div>
 
+          <div className="review">
+            <div className="review-media">
+              {vidURL && (
+                <video ref={playbackRef} className="review-video" src={vidURL} controls />
+              )}
+              <div className="review-media-foot">
+                <button type="button" className="btn btn-sm" onClick={reset}>
+                  Record another
+                </button>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate('/sessions')}>
+                  All sessions &rarr;
+                </button>
+              </div>
+            </div>
 
-    </section>
+            <div className="review-body">
+              <Metrics
+                wordsPerMinute={metrics.wordsPerMinute}
+                fillerCount={metrics.fillerCount}
+                fillersPerMinute={metrics.fillersPerMinute}
+                longestPause={metrics.longestPause}
+                longestPauseTimeStamp={metrics.longestPauseTimeStamp}
+                bloatRatio={metrics.bloatRatio}
+                timeToFirstPoint={metrics.timeToFirstPoint}
+                averages={averages}
+                onSeek={seekTime}
+              />
+              <Transcript words={result.words} onSeek={seekTime} />
+              <Feedback summary={summary} />
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   )
 }
 

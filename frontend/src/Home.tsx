@@ -1,42 +1,131 @@
-import './App.css'
-import { useNavigate } from 'react-router-dom'
+import './Home.css'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from './AuthContext'
 
+/** A frozen slice of the review screen. A transcript with the fillers picked
+ *  out explains this app faster than any amount of copy. */
+function TranscriptPreview() {
+  return (
+    <div className="preview" aria-hidden="true">
+      <div className="preview-bar">
+        <span className="preview-dot" />
+        <span className="preview-dot" />
+        <span className="preview-dot" />
+      </div>
+
+      <div className="preview-body">
+        <p className="preview-transcript">
+          So, <mark>um</mark>, I think the biggest thing I learned was,{' '}
+          <mark>like</mark>, you have to ask for help earlier than feels
+          comfortable. <mark>Uh</mark>, on my last project I spent,{' '}
+          <mark>like</mark>, three days stuck on something a teammate solved in
+          ten minutes.
+        </p>
+
+        <div className="preview-stats">
+          <div className="preview-stat">
+            <span className="preview-stat-value tabular">4</span>
+            <span className="meta">Fillers</span>
+          </div>
+          <div className="preview-stat">
+            <span className="preview-stat-value tabular">138</span>
+            <span className="meta">Words / min</span>
+          </div>
+          <div className="preview-stat">
+            <span className="preview-stat-value tabular">2.4s</span>
+            <span className="meta">Longest pause</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const STEPS = [
+  {
+    title: 'Get a prompt',
+    body: 'Casual or behavioural. Fifteen seconds to think, then it starts recording.',
+  },
+  {
+    title: 'Talk for a minute',
+    body: 'No editing. Just your answer, the way you would say it out loud.',
+  },
+  {
+    title: 'Read it back',
+    body: 'Fillers highlighted, pace and pauses counted, every word clickable.',
+  },
+]
+
 function Home() {
-    const navigate = useNavigate();
-    const { token, logout } = useAuth();
+  const navigate = useNavigate()
+  const { token } = useAuth()
+
+  /* ---------------------------------------------------- signed in ----- */
+
+  if (token) {
+    return (
+      <div className="page home-signed-in rise">
+        <h1>Ready when you are.</h1>
+
+        <div className="home-actions">
+          <button
+            type="button"
+            className="action-card action-card-primary"
+            onClick={() => navigate('/record')}
+          >
+            <span className="action-card-title">Start a session</span>
+            <span className="action-card-desc">Pick a prompt and record an answer.</span>
+            <span className="action-card-go">Record &rarr;</span>
+          </button>
+
+          <button
+            type="button"
+            className="action-card"
+            onClick={() => navigate('/sessions')}
+          >
+            <span className="action-card-title">Past sessions</span>
+            <span className="action-card-desc">Re-watch a take and read the transcript.</span>
+            <span className="action-card-go">Sessions &rarr;</span>
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  /* --------------------------------------------------- signed out ----- */
 
   return (
     <div className="home">
-      <h1>Speakle</h1>
-        <p>Record yourself speaking and figure out where you stumble.</p>
+      <section className="hero">
+        <div className="hero-copy">
+          <h1 className="hero-title">Record yourself. See where you stumble.</h1>
+          <p className="hero-lede">
+            Speakle gives you a prompt, records your answer, and transcribes it
+            with every filler word marked. Click any word to jump back to that
+            moment in the video.
+          </p>
 
-        {token ? (
-          <>
-            <button type="button" onClick={() => navigate('/record')}>
-            Start Recording
-            </button>
+          <div className="row hero-actions">
+            <Link to="/register" className="btn btn-primary btn-lg">
+              Get started
+            </Link>
+            <Link to="/login" className="btn btn-lg">
+              Log in
+            </Link>
+          </div>
+        </div>
 
+        <TranscriptPreview />
+      </section>
 
-            <button type="button" onClick={() => navigate('/sessions')}>
-            View Past Sessions
-            </button>
-
-            <button type="button" onClick={logout}>
-            Log out
-            </button>
-          </>
-        ) : (
-          <>
-            <button type="button" onClick={() => navigate('/login')}>
-            Log in
-            </button>
-
-            <button type="button" onClick={() => navigate('/register')}>
-            Register
-            </button>
-          </>
-        )}
+      <section className="steps">
+        {STEPS.map((s) => (
+          <div className="step" key={s.title}>
+            <h3>{s.title}</h3>
+            <p className="muted">{s.body}</p>
+          </div>
+        ))}
+      </section>
     </div>
   )
 }

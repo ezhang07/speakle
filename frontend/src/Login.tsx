@@ -1,6 +1,6 @@
-import './App.css'
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import './Auth.css'
+import { useState, type SubmitEvent } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from './AuthContext'
 import type { AuthResponse } from './types'
 
@@ -12,7 +12,7 @@ function Login() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
 
-    async function handleSubmit(e: React.SubmitEvent) {
+    async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
         e.preventDefault();
         setError('');
 
@@ -34,33 +34,47 @@ function Login() {
 
     return (
         <div className="auth">
-            <h1>Log in</h1>
-            <form onSubmit={handleSubmit}>
-                <input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                />
-                <input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                />
-                <button type="submit">Log in</button>
-            </form>
+            <div className="auth-card rise">
+                <h1>Log in</h1>
 
-            {error && <p className="auth-error">{error}</p>}
+                <form onSubmit={handleSubmit} className="auth-form">
+                    <label className="auth-field">
+                        <span className="meta">Email</span>
+                        <input
+                            className="input"
+                            type="email"
+                            placeholder="you@example.com"
+                            autoComplete="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                    </label>
 
-            <p>
-                No account?{' '}
-                <button type="button" onClick={() => navigate('/register')}>
-                    Register
-                </button>
-            </p>
+                    <label className="auth-field">
+                        <span className="meta">Password</span>
+                        <input
+                            className="input"
+                            type="password"
+                            placeholder="••••••••"
+                            autoComplete="current-password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                    </label>
+
+                    {error && <p className="error-note">{error}</p>}
+
+                    <button type="submit" className="btn btn-primary btn-lg auth-submit">
+                        Log in
+                    </button>
+                </form>
+
+                <p className="auth-alt muted">
+                    No account? <Link to="/register">Create one</Link>
+                </p>
+            </div>
         </div>
     )
 }

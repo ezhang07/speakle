@@ -1,21 +1,143 @@
-.sessions ul {
-    list-style: none;
-}
-.session {
-    
-    cursor: pointer;
-    padding: 0.75rem;
-    margin-bottom: 0.75rem;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    transition: 0.2s;
-    background-color: rgba(3, 43, 118, 0.316);
+.back-link {
+  margin-bottom: var(--s4);
+  margin-left: calc(var(--s3) * -1);
 }
 
-.session.selected {
-    background-color: #dbeafe; border-color: #3b82f6;
+/* ---------------------------------------------------------- card grid -- */
+
+.session-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--s4);
 }
 
-.session:hover {
-    background: #f0f0f0;
+.session-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--s2);
+  width: 100%;
+  height: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  padding: var(--s3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  transition:
+    border-color var(--fast) var(--ease),
+    background var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
+}
+
+.session-card:hover {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+}
+
+.session-card-loading {
+  cursor: default;
+  gap: var(--s3);
+}
+
+/* ---------------------------------------------------------- thumbnail -- */
+
+.thumb {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--r);
+  overflow: hidden;
+  background: #0a0c11;
+  margin-bottom: var(--s2);
+}
+
+.thumb-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity var(--med) var(--ease);
+}
+
+/* Only revealed once a real frame has been painted, so you never see a flash
+   of black before the poster resolves. */
+.thumb-ready {
+  opacity: 1;
+}
+
+.thumb-placeholder {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r);
+}
+
+.thumb-duration {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text);
+  background: rgba(10, 12, 17, 0.78);
+  border-radius: var(--r-sm);
+  padding: 2px 7px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* ------------------------------------------------------- card content -- */
+
+.session-card-meta {
+  padding: 0 var(--s1);
+  text-transform: capitalize;
+}
+
+.session-card-title {
+  padding: 0 var(--s1);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text);
+
+  /* Keep every card the same height regardless of prompt length. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.session-card-stats {
+  display: flex;
+  gap: var(--s4);
+  margin-top: auto;
+  padding: var(--s3) var(--s1) var(--s1);
+  font-size: 0.8125rem;
+  color: var(--text-faint);
+}
+
+.session-card-stats b {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* ---------------------------------------------------------- skeletons -- */
+
+.skeleton-line {
+  display: block;
+  height: 0.875rem;
+  border-radius: var(--r-sm);
+  width: 100%;
+}
+
+.skeleton-title {
+  height: 1.375rem;
 }

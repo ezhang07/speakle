@@ -40,6 +40,20 @@ export interface Prompt {
   category: 'casual' | 'behavioural';
 }
 
+/** Averages of each metric across the user's other sessions (see averages.ts).
+ *  Lets a session be shown in the context of the user's own history — "coach,
+ *  not judge" — instead of as an absolute score. `count` is how many sessions
+ *  the average was drawn from. */
+export interface MetricAverages {
+  count: number;
+  wordsPerMinute: number;
+  fillerCount: number;
+  fillersPerMinute: number;
+  longestPause: number;
+  bloatRatio: number | null;
+  timeToFirstPoint: number | null;
+}
+
 /** Computed speaking metrics for a session (see model/Metrics.java). */
 export interface Metrics {
   durationSeconds: number;

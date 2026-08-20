@@ -1,111 +1,465 @@
+/* ============================================================================
+   Speakle — design tokens + base styles
+
+   The rule that holds the whole palette together: ONE COLOR, ONE MEANING.
+     --accent  (teal)  = interactive. Links, buttons, focus, selection.
+     --filler  (amber) = a filler word in a transcript. Nothing else, ever.
+     --live    (red)   = recording in progress. Nothing else, ever — so that
+                         when red appears, the user's body knows they're live.
+   Errors deliberately use a desaturated clay (--danger) rather than red, to
+   keep --live meaning exactly one thing.
+
+   Dark-only by choice: this is a video app, and on a dark ground the webcam
+   feed is the brightest thing on screen — which is where the eye should go.
+   ========================================================================== */
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  color-scheme: dark;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* Ground — a desaturated blue-slate, never pure black (pure black kills depth) */
+  --bg: #101319;
+  --bg-elev: #151922;
+  --surface: #181d26;
+  --surface-2: #1f2530;
+  --border: #262d3a;
+  --border-strong: #36404f;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* Text — slightly warm off-white so long transcripts don't feel clinical */
+  --text: #e9e7e4;
+  --text-muted: #99a2b1;
+  --text-faint: #6a7382;
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  /* Accent: interactive only */
+  --accent: #4fd1c5;
+  --accent-bright: #74e3d9;
+  --accent-ink: #06201d;
+  --accent-soft: rgba(79, 209, 197, 0.12);
+  --accent-line: rgba(79, 209, 197, 0.38);
+
+  /* Amber: fillers only */
+  --filler: #e8b33c;
+  --filler-soft: rgba(232, 179, 60, 0.16);
+  --filler-line: rgba(232, 179, 60, 0.6);
+
+  /* Red: the record dot only */
+  --live: #ff4d4d;
+  --live-soft: rgba(255, 77, 77, 0.14);
+
+  /* Errors — distinct from --live on purpose */
+  --danger: #e0817c;
+  --danger-soft: rgba(224, 129, 124, 0.12);
+
+  /* Type */
+  --sans:
+    system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --display: 'Space Grotesk', var(--sans);
+  --mono: ui-monospace, 'SF Mono', Consolas, monospace;
+
+  /* Spacing — 4px base */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+  --s8: 64px;
+  --s9: 96px;
+
+  /* Radii */
+  --r-sm: 6px;
+  --r: 10px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+  --r-full: 999px;
+
+  /* Depth */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.45);
+
+  /* Motion — short and purposeful */
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --fast: 130ms;
+  --med: 240ms;
+
+  --shell-max: 1180px;
+  --topbar-h: 60px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+/* ---------------------------------------------------------------- reset -- */
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
+  min-height: 100svh;
+  font: 400 16px/1.55 var(--sans);
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* A very soft teal bloom at the top of the page so the ground isn't dead flat. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 420px;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    70% 100% at 50% 0%,
+    rgba(79, 209, 197, 0.07),
+    transparent 70%
+  );
 }
 
 #root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
+  position: relative;
+  z-index: 1;
   min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
 }
 
+img,
+svg,
+video {
+  display: block;
+  max-width: 100%;
+}
+
+/* ----------------------------------------------------------- typography -- */
+
 h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+h2,
+h3,
+h4 {
+  font-family: var(--display);
+  color: var(--text);
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
 }
 
 h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+  font-size: clamp(1.9rem, 1.3rem + 2.4vw, 2.75rem);
 }
 h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
+  font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
 }
+h3 {
+  font-size: 1.0625rem;
+}
+
 p {
   margin: 0;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: color var(--fast) var(--ease);
+}
+a:hover {
+  color: var(--accent-bright);
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+::selection {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+/* Numbers must never jitter as they change. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Secondary information — dates, labels, categories. Deliberately plain:
+   sentence case at a readable size, not a tiny tracked-out uppercase label. */
+.meta {
+  font-size: 0.875rem;
+  color: var(--text-faint);
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+/* -------------------------------------------------------------- layout -- */
+
+.page {
+  width: 100%;
+  max-width: var(--shell-max);
+  margin: 0 auto;
+  padding: var(--s7) var(--s5) var(--s9);
+}
+
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s4);
+  flex-wrap: wrap;
+  margin-bottom: var(--s6);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  flex-wrap: wrap;
+}
+
+/* ------------------------------------------------------------- surface -- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: var(--s5);
+}
+
+.divider {
+  height: 1px;
+  background: var(--border);
+  border: 0;
+  margin: var(--s6) 0;
+}
+
+/* ------------------------------------------------------------- buttons -- */
+
+.btn {
+  --btn-bg: transparent;
+  --btn-fg: var(--text);
+  --btn-bd: var(--border-strong);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  font: 500 0.9375rem/1 var(--sans);
+  font-family: var(--display);
+  letter-spacing: -0.01em;
+  padding: 11px 18px;
+  border-radius: var(--r-full);
+  border: 1px solid var(--btn-bd);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background var(--fast) var(--ease),
+    border-color var(--fast) var(--ease),
+    color var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
+}
+
+.btn:hover {
+  background: var(--surface-2);
+  border-color: var(--text-faint);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-primary {
+  --btn-bg: var(--accent);
+  --btn-fg: var(--accent-ink);
+  --btn-bd: var(--accent);
+  font-weight: 600;
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-bright);
+  border-color: var(--accent-bright);
+}
+
+.btn-ghost {
+  --btn-bd: transparent;
+  --btn-fg: var(--text-muted);
+}
+.btn-ghost:hover {
+  --btn-fg: var(--text);
+  background: var(--surface-2);
+  border-color: transparent;
+}
+
+.btn-danger {
+  --btn-fg: var(--danger);
+  --btn-bd: transparent;
+}
+.btn-danger:hover {
+  background: var(--danger-soft);
+  border-color: transparent;
+  --btn-fg: var(--danger);
+}
+
+.btn-lg {
+  padding: 15px 28px;
+  font-size: 1.0625rem;
+}
+
+.btn-sm {
+  padding: 8px 14px;
+  font-size: 0.875rem;
+}
+
+/* -------------------------------------------------------------- inputs -- */
+
+.input {
+  width: 100%;
+  font: 400 1rem/1.4 var(--sans);
+  color: var(--text);
+  background: var(--bg-elev);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r);
+  padding: 12px 14px;
+  transition:
+    border-color var(--fast) var(--ease),
+    background var(--fast) var(--ease);
+}
+
+.input::placeholder {
+  color: var(--text-faint);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+/* --------------------------------------------------------------- pills -- */
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 4px 11px;
+  border-radius: var(--r-full);
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+  /* The DB stores 'casual' / 'behavioural' lowercase. */
+  text-transform: capitalize;
+}
+
+.tag-accent {
+  color: var(--accent);
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+
+/* -------------------------------------------------------------- states -- */
+
+.error-note {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  color: var(--danger);
+  background: var(--danger-soft);
+  border: 1px solid rgba(224, 129, 124, 0.28);
+  border-radius: var(--r);
+  padding: 10px 14px;
+  font-size: 0.9375rem;
+}
+
+.empty {
+  text-align: center;
+  padding: var(--s9) var(--s5);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-lg);
+}
+
+.empty h2 {
+  margin-bottom: var(--s2);
+}
+
+.empty p {
+  color: var(--text-muted);
+  max-width: 40ch;
+  margin: 0 auto var(--s5);
+}
+
+/* ----------------------------------------------------------- skeletons -- */
+
+/* Placeholder blocks shown while a list is still loading, so the page lands in
+   its final shape instead of flickering from empty to full. */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 25%,
+    #262d3a 37%,
+    var(--surface-2) 63%
+  );
+  background-size: 400% 100%;
+  border-radius: var(--r-sm);
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+/* ------------------------------------------------------------- motion --- */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise {
+  animation: rise var(--med) var(--ease) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

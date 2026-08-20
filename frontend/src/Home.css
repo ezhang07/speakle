@@ -1,0 +1,228 @@
+.home {
+  width: 100%;
+  max-width: var(--shell-max);
+  margin: 0 auto;
+  padding: 0 var(--s5) var(--s9);
+}
+
+/* ---------------------------------------------------------------- hero -- */
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--s8);
+  padding: var(--s9) 0 var(--s8);
+}
+
+.hero-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s4);
+}
+
+.hero-title {
+  font-size: clamp(2.25rem, 1.6rem + 2.8vw, 3.5rem);
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.hero-lede {
+  font-size: 1.125rem;
+  line-height: 1.65;
+  color: var(--text-muted);
+  max-width: 48ch;
+}
+
+.hero-actions {
+  margin-top: var(--s3);
+  gap: var(--s3);
+}
+
+/* ------------------------------------------------- transcript preview -- */
+
+.preview {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  transform: rotate(-0.6deg);
+}
+
+.preview-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--s3) var(--s4);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elev);
+}
+
+.preview-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: var(--r-full);
+  background: var(--border-strong);
+}
+
+.preview-body {
+  padding: var(--s5);
+}
+
+.preview-transcript {
+  font-size: 1.0625rem;
+  line-height: 1.85;
+  color: var(--text);
+}
+
+/* Same marker-pen treatment the real transcript uses. */
+.preview-transcript mark {
+  background: var(--filler-soft);
+  box-shadow: inset 0 -2px 0 var(--filler-line);
+  color: var(--filler);
+  border-radius: 3px 3px 0 0;
+  padding: 1px 1px;
+}
+
+.preview-stats {
+  display: flex;
+  gap: var(--s6);
+  margin-top: var(--s5);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--border);
+}
+
+.preview-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.preview-stat-value {
+  font-family: var(--display);
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--text);
+}
+
+/* --------------------------------------------------------------- steps -- */
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--s6);
+  padding: var(--s8) 0 0;
+  border-top: 1px solid var(--border);
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.step p {
+  font-size: 0.9375rem;
+  line-height: 1.65;
+}
+
+/* ----------------------------------------------------------- signed in -- */
+
+.home-signed-in {
+  max-width: 860px;
+}
+
+.home-signed-in h1 {
+  margin-bottom: var(--s6);
+}
+
+.home-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--s4);
+}
+
+.action-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s2);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  padding: var(--s5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  transition:
+    border-color var(--fast) var(--ease),
+    background var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
+}
+
+.action-card:hover {
+  background: var(--surface-2);
+  border-color: var(--accent-line);
+  transform: translateY(-2px);
+}
+
+.action-card-primary {
+  background: linear-gradient(
+    150deg,
+    var(--accent-soft),
+    rgba(79, 209, 197, 0.02) 65%
+  );
+  border-color: var(--accent-line);
+}
+
+.action-card-title {
+  font-family: var(--display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.action-card-desc {
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.action-card-go {
+  margin-top: var(--s3);
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--accent);
+}
+
+/* -------------------------------------------------------- responsive --- */
+
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s7);
+    padding-top: var(--s7);
+  }
+
+  .preview {
+    transform: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .home {
+    padding-inline: var(--s4);
+  }
+
+  .preview-stats {
+    gap: var(--s5);
+  }
+}

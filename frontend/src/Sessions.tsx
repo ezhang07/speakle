@@ -1,18 +1,123 @@
 import './Sessions.css'
+import './Review.css'
 import { useNavigate } from 'react-router-dom'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, type SyntheticEvent } from 'react'
 import Transcript from './Transcript'
 import Metrics from './Metrics'
 import Feedback from './Feedback'
 import { useAuthedFetch } from './useAuthedFetch'
+import { computeAverages } from './averages'
 import type { VideoUrlResponse, Session, TranscriptData } from './types'
 
+
+function formatDuration(seconds: number) {
+    const m = Math.floor(seconds / 60)
+    const s = Math.round(seconds % 60)
+    return `${m}:${String(s).padStart(2, '0')}`
+}
+
+function formatDate(iso: string) {
+    const d = new Date(iso)
+    return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+        + ', ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+}
+
+/**
+ * A poster frame for a session, taken from the video itself so you can tell
+ * takes apart at a glance.
+ *
+ * Each thumbnail costs a presigned-URL request plus enough of the webm to paint
+ * one frame, so it only starts loading once the card is near the viewport. The
+ * cheaper long-term fix is writing a real thumbnail to S3 at record time.
+ */
+function SessionThumb({ sessionId, durationSeconds }: { sessionId: string; durationSeconds: number }) {
+    const authedFetch = useAuthedFetch()
+    const [url, setUrl] = useState<string | null>(null)
+    const [ready, setReady] = useState(false)
+    const [failed, setFailed] = useState(false)
+    const holderRef = useRef<HTMLSpanElement>(null)
+
+    useEffect(() => {
+        const node = holderRef.current
+        if (!node) return
+
+        let cancelled = false
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (!entries[0].isIntersecting) return
+                observer.disconnect()   // one fetch per card, ever
+
+                authedFetch(`/api/sessions/${sessionId}/video-url`)
+                    .then((res) => (res.ok ? res.json() as Promise<VideoUrlResponse> : Promise.reject(new Error())))
+                    .then((data) => { if (!cancelled) setUrl(data.url) })
+                    .catch(() => { if (!cancelled) setFailed(true) })
+            },
+            { rootMargin: '250px' },
+        )
+
+        observer.observe(node)
+        return () => { cancelled = true; observer.disconnect() }
+    }, [sessionId, authedFetch])
+
+    // The first frame of a webcam take is often half-exposed, so seek in a
+    // little. MediaRecorder webm frequently reports duration as Infinity —
+    // when it does, just keep whatever frame loads first.
+    function handleMetadata(e: SyntheticEvent<HTMLVideoElement>) {
+        const video = e.currentTarget
+        if (Number.isFinite(video.duration) && video.duration > 1) {
+            video.currentTime = Math.min(1, video.duration / 2)
+        }
+    }
+
+    return (
+        <span className="thumb" ref={holderRef}>
+            {url && !failed && (
+                <video
+                    className={ready ? 'thumb-video thumb-ready' : 'thumb-video'}
+                    src={url}
+                    muted
+                    playsInline
+                    preload="metadata"
+                    onLoadedMetadata={handleMetadata}
+                    onSeeked={() => setReady(true)}
+                    onLoadedData={() => setReady(true)}
+                    onError={() => setFailed(true)}
+                />
+            )}
+            {!ready && !failed && <span className="thumb-placeholder skeleton" />}
+            {failed && <span className="thumb-placeholder" />}
+            <span className="thumb-duration tabular">{formatDuration(durationSeconds)}</span>
+        </span>
+    )
+}
+
+/** Cards in their final shape while the list loads, so the page doesn't flash
+ *  from empty to full. */
+function SessionSkeletons() {
+    return (
+        <ul className="session-grid">
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+                <li key={i}>
+                    <div className="session-card session-card-loading">
+                        <span className="thumb">
+                            <span className="thumb-placeholder skeleton" />
+                        </span>
+                        <span className="skeleton skeleton-line" style={{ width: '55%' }} />
+                        <span className="skeleton skeleton-line skeleton-title" />
+                        <span className="skeleton skeleton-line" style={{ width: '70%' }} />
+                    </div>
+                </li>
+            ))}
+        </ul>
+    )
+}
 
 function Sessions() {
     const navigate = useNavigate();
     const authedFetch = useAuthedFetch();
 
     const [sessions, setSessions] = useState<Session[]>([]);
+    const [loading, setLoading] = useState(true);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [error, setError] = useState(false)
     const [videoURL, setVideoURL] = useState<string | null>(null);
@@ -21,6 +126,10 @@ function Sessions() {
 
     const selected = sessions.find((s) => s.sessionId === selectedId);
     const transcriptionClickOffset = 0.2;
+
+    // Compare a session against the user's other sessions, never against an
+    // absolute target.
+    const averages = computeAverages(sessions, selectedId ?? undefined);
 
 
     function seekTime(time: number) {
@@ -39,6 +148,8 @@ function Sessions() {
                 setSessions(data);
             } catch {
                 // A 401 is already handled by authedFetch
+            } finally {
+                setLoading(false);
             }
         }
         loadSessions();
@@ -46,6 +157,7 @@ function Sessions() {
 
     useEffect(() => {
         setError(false);
+        setVideoURL(null);   // don't show the previous session's video while this one loads
 
         if (!selectedId) return;
 
@@ -55,7 +167,7 @@ function Sessions() {
                 const data = await res.json() as VideoUrlResponse;
                 setVideoURL(data.url);
             } catch {
-
+                setError(true);
             }
         }
         getVideo();
@@ -77,58 +189,135 @@ function Sessions() {
         }
     }
 
-    return (
-        <div className="sessions">
-            <h1>Sessions</h1>
-            <button type="button" onClick={() => {navigate('/')}}>
-                Return back home
-            </button>
-            <ul>
-            {sessions.map((s) => {
-                const date = new Date(s.createdAt);
-                const text = (JSON.parse(s.transcript) as TranscriptData).text;
-                const preview = s.promptText ?? text.slice(0, 60);
+    /* ------------------------------------------------- detail view ----- */
 
-                return (
-                <li key={s.sessionId}
-                onClick={() => setSelectedId(s.sessionId)}
-                className={selectedId === s.sessionId ? 'session selected' : 'session'}>
-                    {date.toLocaleDateString()} {date.toLocaleTimeString()} - "{preview}..."
-                </li>
-            )})}
-            </ul>
+    if (selected) {
+        const parsed = JSON.parse(selected.transcript) as TranscriptData;
 
+        return (
+            <div className="page rise">
+                <button
+                    type="button"
+                    className="btn btn-ghost btn-sm back-link"
+                    onClick={() => setSelectedId(null)}
+                >
+                    &larr; All sessions
+                </button>
 
-            {selected && (
-                <div className="playback">
-                    {error ? <p>
-                        This session's video cannot be loaded.
-                    </p> :
-                    <video ref={playbackRef}
-                    src={videoURL ?? undefined}
-                    onError={() => setError(true)} controls>
-                    </video>}
-                    <button type="button" onClick={() => deleteSession(selected.sessionId)}>
-                        Delete session
-                    </button>
+                <div className="review-prompt">
+                    <div className="row">
+                        <span className="tag">{selected.promptCategory}</span>
+                        <span className="meta">{formatDate(selected.createdAt)}</span>
                     </div>
-            )}
+                    <h1 className="review-prompt-text">
+                        {selected.promptText || parsed.text.slice(0, 90) + '…'}
+                    </h1>
+                </div>
 
-            {selected && <Transcript words={(JSON.parse(selected.transcript) as TranscriptData).words} onSeek={seekTime}></Transcript>}
+                <div className="review">
+                    <div className="review-media">
+                        {error ? (
+                            <p className="error-note">This session&rsquo;s video cannot be loaded.</p>
+                        ) : (
+                            <video
+                                ref={playbackRef}
+                                className="review-video"
+                                src={videoURL ?? undefined}
+                                onError={() => setError(true)}
+                                controls
+                            />
+                        )}
+                        <div className="review-media-foot">
+                            <span className="meta tabular">
+                                {formatDuration(selected.durationSeconds)}
+                            </span>
+                            <button
+                                type="button"
+                                className="btn btn-danger btn-sm"
+                                onClick={() => deleteSession(selected.sessionId)}
+                            >
+                                Delete session
+                            </button>
+                        </div>
+                    </div>
 
-            {selected && (
-                <Metrics
-                    wordsPerMinute={selected.wordsPerMinute}
-                    fillerCount={selected.fillerCount}
-                    fillersPerMinute={selected.fillersPerMinute}
-                    longestPause={selected.longestPause}
-                    longestPauseTimeStamp={selected.longestPauseTimeStamp}
-                    bloatRatio={selected.bloatRatio}
-                    timeToFirstPoint={selected.timeToFirstPoint}
-                    onSeek={seekTime}
-                />
+                    <div className="review-body">
+                        <Metrics
+                            wordsPerMinute={selected.wordsPerMinute}
+                            fillerCount={selected.fillerCount}
+                            fillersPerMinute={selected.fillersPerMinute}
+                            longestPause={selected.longestPause}
+                            longestPauseTimeStamp={selected.longestPauseTimeStamp}
+                            bloatRatio={selected.bloatRatio}
+                            timeToFirstPoint={selected.timeToFirstPoint}
+                            averages={averages}
+                            onSeek={seekTime}
+                        />
+                        <Transcript words={parsed.words} onSeek={seekTime} />
+                        <Feedback summary={selected.summary} />
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    /* --------------------------------------------------- list view ----- */
+
+    return (
+        <div className="page">
+            <div className="page-head">
+                <h1>Sessions</h1>
+                {!loading && sessions.length > 0 && (
+                    <button type="button" className="btn btn-primary" onClick={() => navigate('/record')}>
+                        New session
+                    </button>
+                )}
+            </div>
+
+            {loading ? (
+                <SessionSkeletons />
+            ) : sessions.length === 0 ? (
+                <div className="empty">
+                    <h2>No sessions yet</h2>
+                    <p>Record one and it&rsquo;ll show up here.</p>
+                    <button type="button" className="btn btn-primary btn-lg" onClick={() => navigate('/record')}>
+                        Record a session
+                    </button>
+                </div>
+            ) : (
+                <ul className="session-grid">
+                    {sessions.map((s) => {
+                        const text = (JSON.parse(s.transcript) as TranscriptData).text;
+                        const title = s.promptText || text.slice(0, 70) + '…';
+
+                        return (
+                            <li key={s.sessionId}>
+                                <button
+                                    type="button"
+                                    className="session-card"
+                                    onClick={() => setSelectedId(s.sessionId)}
+                                >
+                                    <SessionThumb
+                                        sessionId={s.sessionId}
+                                        durationSeconds={s.durationSeconds}
+                                    />
+
+                                    <span className="meta session-card-meta">
+                                        {s.promptCategory} &middot; {formatDate(s.createdAt)}
+                                    </span>
+
+                                    <span className="session-card-title">{title}</span>
+
+                                    <span className="session-card-stats tabular">
+                                        <span><b>{s.fillerCount}</b> fillers</span>
+                                        <span><b>{Math.round(s.wordsPerMinute)}</b> wpm</span>
+                                    </span>
+                                </button>
+                            </li>
+                        )
+                    })}
+                </ul>
             )}
-            {selected && <Feedback summary={selected.summary} />}
         </div>
     )
 }
