@@ -84,7 +84,7 @@ function Home() {
             onClick={() => navigate('/sessions')}
           >
             <span className="action-card-title">Past sessions</span>
-            <span className="action-card-desc">Re-watch a take and read the transcript.</span>
+            <span className="action-card-desc">Re-watch and review.</span>
             <span className="action-card-go">Sessions &rarr;</span>
           </button>
         </div>
