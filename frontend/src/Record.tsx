@@ -349,17 +349,15 @@ function Record() {
           <button type="button" className="prompt-card" onClick={() => selectPrompt('casual')}>
             <span className="prompt-card-title">Casual</span>
             <span className="prompt-card-desc">
-              Weekends, food, hobbies, places you&rsquo;d like to go.
+              Practice your speech in a conversational setting. 
             </span>
-            <span className="prompt-card-go">Start &rarr;</span>
           </button>
 
           <button type="button" className="prompt-card" onClick={() => selectPrompt('behavioural')}>
             <span className="prompt-card-title">Behavioural</span>
             <span className="prompt-card-desc">
-              &ldquo;Tell me about a time&hellip;&rdquo; &mdash; the interview kind.
+              Practice your speech in an interview setting.
             </span>
-            <span className="prompt-card-go">Start &rarr;</span>
           </button>
         </div>
       </div>
