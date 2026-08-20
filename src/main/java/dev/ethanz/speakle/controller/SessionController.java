@@ -53,7 +53,7 @@ public class SessionController {
 
     @GetMapping
     public List<Session> getSessions(@AuthenticationPrincipal String userId) {
-        return sessionRepository.findByUserId(userId);
+        return sessionRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }
 
     @GetMapping("/{id}")

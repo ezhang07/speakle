@@ -144,8 +144,24 @@
   max-width: 860px;
 }
 
-.home-signed-in h1 {
+/* Reserves the greeting's full height so the cards below don't jump when the
+   session count arrives. */
+.home-greeting {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  min-height: 4.5rem;
   margin-bottom: var(--s6);
+}
+
+.home-greeting-skeleton {
+  height: 2.5rem;
+  max-width: 340px;
+}
+
+.home-greeting-sub {
+  height: 0.9rem;
+  max-width: 180px;
 }
 
 .home-actions {

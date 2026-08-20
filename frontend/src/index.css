@@ -437,6 +437,17 @@ a:hover {
   }
 }
 
+.skeleton-line {
+  display: block;
+  height: 0.875rem;
+  border-radius: var(--r-sm);
+  width: 100%;
+}
+
+.skeleton-title {
+  height: 1.375rem;
+}
+
 /* ------------------------------------------------------------- motion --- */
 
 @keyframes rise {

@@ -9,5 +9,7 @@ import dev.ethanz.speakle.entity.Session;
 
 @Repository
 public interface SessionRepository extends JpaRepository<Session, String> {
-    public List<Session> findByUserId(String userId);
+    // Newest first — Spring Data derives the ORDER BY from the method name.
+    // Without it Postgres returns rows in arbitrary order.
+    public List<Session> findByUserIdOrderByCreatedAtDesc(String userId);
 }
