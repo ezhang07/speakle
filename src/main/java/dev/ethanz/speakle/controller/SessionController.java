@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import dev.ethanz.speakle.entity.Session;
 import dev.ethanz.speakle.model.JobResponse;
+import dev.ethanz.speakle.model.SessionResponse;
 import dev.ethanz.speakle.model.TranscribeRequest;
 import dev.ethanz.speakle.model.VideoUrlResponse;
 import dev.ethanz.speakle.model.UploadUrlResponse;
@@ -51,9 +52,14 @@ public class SessionController {
         return new JobResponse(jobId);
     }
 
+    // Thumb URLs are signed into this response rather than fetched per card: signing is a
+    // local HMAC (no S3 call), so one list request replaces N round trips to this server.
     @GetMapping
-    public List<Session> getSessions(@AuthenticationPrincipal String userId) {
-        return sessionRepository.findByUserIdOrderByCreatedAtDesc(userId);
+    public List<SessionResponse> getSessions(@AuthenticationPrincipal String userId) {
+        return sessionRepository.findByUserIdOrderByCreatedAtDesc(userId)
+                .stream()
+                .map(this::withThumbUrl)
+                .toList();
     }
 
     @GetMapping("/{id}")
@@ -70,7 +76,11 @@ public class SessionController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        return ResponseEntity.ok(session);
+        return ResponseEntity.ok(withThumbUrl(session));
+    }
+
+    private SessionResponse withThumbUrl(Session session) {
+        return SessionResponse.of(session, s3Service.presignGetUrl(S3Service.thumbKey(session.getSessionId())));
     }
 
 
@@ -86,7 +96,7 @@ public class SessionController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        String presignedURL = s3Service.presignGetUrl(id);
+        String presignedURL = s3Service.presignGetUrl(S3Service.videoKey(id));
 
         return ResponseEntity.ok(new VideoUrlResponse(presignedURL));
     }
@@ -94,7 +104,7 @@ public class SessionController {
     @PostMapping("/upload-url")
     public UploadUrlResponse createUploadUrl(@AuthenticationPrincipal String userId) {
         String id = UUID.randomUUID().toString();
-        String url = s3Service.presignPutUrl(id);
+        String url = s3Service.presignPutUrl(S3Service.videoKey(id));
         return new UploadUrlResponse(url, id);
     }
 
@@ -110,7 +120,10 @@ public class SessionController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        s3Service.deleteObject(id);
+        // Objects first, row last: a failure here leaves a visible dangling row rather
+        // than invisible orphaned objects. Both objects go, or the jpg outlives the session.
+        s3Service.deleteObject(S3Service.videoKey(id));
+        s3Service.deleteObject(S3Service.thumbKey(id));
         sessionRepository.deleteById(id);
 
         return ResponseEntity.noContent().build();
