@@ -59,7 +59,7 @@
   margin-bottom: var(--s2);
 }
 
-.thumb-video {
+.thumb-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -67,8 +67,8 @@
   transition: opacity var(--med) var(--ease);
 }
 
-/* Only revealed once a real frame has been painted, so you never see a flash
-   of black before the poster resolves. */
+/* Only revealed once the image has decoded, so you never see a flash of black
+   before the poster resolves. */
 .thumb-ready {
   opacity: 1;
 }

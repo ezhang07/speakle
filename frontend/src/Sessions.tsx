@@ -1,7 +1,7 @@
 import './Sessions.css'
 import './Review.css'
 import { useNavigate } from 'react-router-dom'
-import { useState, useEffect, useRef, type SyntheticEvent } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Transcript from './Transcript'
 import Metrics from './Metrics'
 import Feedback from './Feedback'
@@ -23,64 +23,26 @@ function formatDate(iso: string) {
 }
 
 /**
- * A poster frame for a session, taken from the video itself so you can tell
- * takes apart at a glance.
+ * A poster frame for a session, extracted from the video by the transcription
+ * job and stored alongside it in S3.
  *
- * Each thumbnail costs a presigned-URL request plus enough of the webm to paint
- * one frame, so it only starts loading once the card is near the viewport. The
- * cheaper long-term fix is writing a real thumbnail to S3 at record time.
+ * `thumbUrl` arrives already signed on the session itself, so this costs one
+ * ~20KB image and no request to our backend. Sessions recorded before
+ * thumbnails existed point at a missing object — hence the error fallback.
  */
-function SessionThumb({ sessionId, durationSeconds }: { sessionId: string; durationSeconds: number }) {
-    const authedFetch = useAuthedFetch()
-    const [url, setUrl] = useState<string | null>(null)
+function SessionThumb({ url, durationSeconds }: { url: string; durationSeconds: number }) {
     const [ready, setReady] = useState(false)
     const [failed, setFailed] = useState(false)
-    const holderRef = useRef<HTMLSpanElement>(null)
-
-    useEffect(() => {
-        const node = holderRef.current
-        if (!node) return
-
-        let cancelled = false
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (!entries[0].isIntersecting) return
-                observer.disconnect()   // one fetch per card, ever
-
-                authedFetch(`/api/sessions/${sessionId}/video-url`)
-                    .then((res) => (res.ok ? res.json() as Promise<VideoUrlResponse> : Promise.reject(new Error())))
-                    .then((data) => { if (!cancelled) setUrl(data.url) })
-                    .catch(() => { if (!cancelled) setFailed(true) })
-            },
-            { rootMargin: '250px' },
-        )
-
-        observer.observe(node)
-        return () => { cancelled = true; observer.disconnect() }
-    }, [sessionId, authedFetch])
-
-    // The first frame of a webcam take is often half-exposed, so seek in a
-    // little. MediaRecorder webm frequently reports duration as Infinity —
-    // when it does, just keep whatever frame loads first.
-    function handleMetadata(e: SyntheticEvent<HTMLVideoElement>) {
-        const video = e.currentTarget
-        if (Number.isFinite(video.duration) && video.duration > 1) {
-            video.currentTime = Math.min(1, video.duration / 2)
-        }
-    }
 
     return (
-        <span className="thumb" ref={holderRef}>
-            {url && !failed && (
-                <video
-                    className={ready ? 'thumb-video thumb-ready' : 'thumb-video'}
+        <span className="thumb">
+            {!failed && (
+                <img
+                    className={ready ? 'thumb-img thumb-ready' : 'thumb-img'}
                     src={url}
-                    muted
-                    playsInline
-                    preload="metadata"
-                    onLoadedMetadata={handleMetadata}
-                    onSeeked={() => setReady(true)}
-                    onLoadedData={() => setReady(true)}
+                    alt=""
+                    loading="lazy"
+                    onLoad={() => setReady(true)}
                     onError={() => setFailed(true)}
                 />
             )}
@@ -298,7 +260,7 @@ function Sessions() {
                                     onClick={() => setSelectedId(s.sessionId)}
                                 >
                                     <SessionThumb
-                                        sessionId={s.sessionId}
+                                        url={s.thumbUrl}
                                         durationSeconds={s.durationSeconds}
                                     />
 

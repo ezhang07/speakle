@@ -14,9 +14,13 @@ export interface TranscriptData {
   words: Word[];
 }
 
-/** A saved practice session row (see entity/Session.java).
+/** A saved practice session (see model/SessionResponse.java).
  *  `transcript` is a JSON string that parses into a TranscriptData.
- *  The metric fields are computed at transcribe-time (see MetricsService). */
+ *  The metric fields are computed at transcribe-time (see MetricsService).
+ *  `thumbUrl` is a short-lived presigned S3 URL for the poster frame, signed
+ *  into the response so the grid doesn't need a request per card. It points at
+ *  a missing object for sessions recorded before thumbnails existed, so the UI
+ *  must handle it failing to load. */
 export interface Session {
   sessionId: string;
   userId: string | null;
@@ -33,6 +37,7 @@ export interface Session {
   bloatRatio: number | null;
   timeToFirstPoint: number | null;
   summary: string | null;
+  thumbUrl: string;
 }
 
 export interface Prompt {
