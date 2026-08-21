@@ -29,24 +29,39 @@ public class S3Service {
         this.bucket = bucket;
     }
 
-    // Upload the recording to s3://{bucket}/{id}.webm.
-    public void putObject(Path file, String id) throws IOException {
+    /* ------------------------------------------------------------ keys -- */
+    // A session id owns more than one object now (the recording and its poster
+    // frame), so the extension can't be baked into the methods below. These two
+    // keep the layout in one place instead of scattering string concatenation.
+
+    public static String videoKey(String id) {
+        return id + ".webm";
+    }
+
+    public static String thumbKey(String id) {
+        return id + ".jpg";
+    }
+
+    /* --------------------------------------------------------- objects -- */
+
+    // Upload a local file to s3://{bucket}/{key}.
+    public void putObject(Path file, String key, String contentType) throws IOException {
         // The request describes WHERE + WHAT metadata; RequestBody carries the bytes.
         PutObjectRequest request = PutObjectRequest.builder()
                 .bucket(bucket)
-                .key(id + ".webm")
-                .contentType("video/webm")
+                .key(key)
+                .contentType(contentType)
                 .build();
 
         s3Client.putObject(request, RequestBody.fromFile(file));
     }
 
-    // create a presigned URL for when the user wants to watch the video. 
+    // create a presigned URL for when the user wants to watch the video.
     // This is a short-lived URL that allows access to the object without needing AWS credentials.
-    public String presignGetUrl(String id) {
+    public String presignGetUrl(String key) {
         GetObjectRequest getRequest = GetObjectRequest.builder()
         .bucket(bucket)
-        .key(id + ".webm")
+        .key(key)
         .build();
 
         GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
@@ -57,10 +72,12 @@ public class S3Service {
         return s3Presigner.presignGetObject(presignRequest).url().toString();
     }
 
-    public String presignPutUrl(String id) {
+    // NOTE: deliberately does NOT pin a contentType — the signature would then cover
+    // the Content-Type header, and the browser's PUT would have to match it exactly.
+    public String presignPutUrl(String key) {
         PutObjectRequest putRequest = PutObjectRequest.builder()
         .bucket(bucket)
-        .key(id + ".webm")
+        .key(key)
         .build();
 
         PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
@@ -71,13 +88,19 @@ public class S3Service {
         return s3Presigner.presignPutObject(presignRequest).url().toString();
     }
 
-    public Path getObject(String id) throws IOException {
+    public Path getObject(String key) throws IOException {
         GetObjectRequest request = GetObjectRequest.builder()
         .bucket(bucket)
-        .key(id + ".webm")
+        .key(key)
         .build();
 
-        Path tempFile = Files.createTempFile(id, ".webm");
+        // Mirror the key's own extension onto the temp file so it's obvious what
+        // landed there; ffmpeg sniffs the container itself, so this is cosmetic.
+        int dot = key.lastIndexOf('.');
+        String prefix = dot < 0 ? key : key.substring(0, dot);
+        String suffix = dot < 0 ? "" : key.substring(dot);
+
+        Path tempFile = Files.createTempFile(prefix, suffix);
         // getObject(request, Path) refuses to write to an existing file, but createTempFile
         // already made an empty one — delete it so the SDK can create it itself.
         Files.delete(tempFile);
@@ -85,11 +108,11 @@ public class S3Service {
         return tempFile;
     }
 
-    // Delete the recording from S3. Idempotent: deleting a missing key is a no-op success.
-    public void deleteObject(String id) {
+    // Delete one object. Idempotent: deleting a missing key is a no-op success.
+    public void deleteObject(String key) {
         DeleteObjectRequest request = DeleteObjectRequest.builder()
                 .bucket(bucket)
-                .key(id + ".webm")
+                .key(key)
                 .build();
 
         s3Client.deleteObject(request);
