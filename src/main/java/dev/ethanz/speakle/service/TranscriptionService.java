@@ -85,11 +85,12 @@ public class TranscriptionService {
         Path audio = null;
         try {
             // the request's temp copy is long gone — pull the video back down from S3
-            video = s3Service.getObject(job.getVideoKey());
+            video = s3Service.getObject(S3Service.videoKey(job.getVideoKey()));
             audio = Files.createTempFile(job.getVideoKey(), ".mp3");
 
             // get audio from video, then transcribe it
             extractAudio(audio, video);
+            generateThumbnail(video, job.getVideoKey()); // best-effort; never fails the job
             String transcript = transcribe(audio);
 
             TranscriptDto dto = objectMapper.readValue(transcript, TranscriptDto.class);
@@ -154,6 +155,60 @@ public class TranscriptionService {
         }
         if (process.exitValue() != 0) {
             throw new IOException("ffmpeg failed (exit " + process.exitValue() + "):\n" + log);
+        }
+    }
+
+    // extracts thumbnail from video, and puts in s3
+    private void generateThumbnail(Path video, String id) {
+        Path thumb = null;
+        try {
+            thumb = Files.createTempFile(id, ".jpg");
+
+            Process process = new ProcessBuilder(
+                    ffmpegPath,
+                    "-y",
+                    "-i", video.toString(),
+                    // -ss AFTER -i on purpose. Before -i is a fast seek through the container's
+                    // index, and MediaRecorder webm has none (the same defect behind
+                    // `duration: Infinity`) — it lands on a black frame or fails outright.
+                    // After -i decodes and discards, which for one second of video is nothing.
+                    "-ss", "1",
+                    "-frames:v", "1",
+                    "-vf", "scale=320:-2",    // -2 derives height from the aspect ratio, kept even
+                    "-q:v", "6",              // JPEG quality, 2 = best .. 31 = worst
+                    thumb.toString())
+                    .redirectErrorStream(true)
+                    .start();
+
+            String log = new String(process.getInputStream().readAllBytes());
+
+            if (!process.waitFor(1, TimeUnit.MINUTES)) {
+                process.destroyForcibly();
+                throw new IOException("ffmpeg timed out generating a thumbnail");
+            }
+            if (process.exitValue() != 0) {
+                throw new IOException("ffmpeg thumbnail failed (exit " + process.exitValue() + "):\n" + log);
+            }
+            // A clip shorter than the seek point produces no frames and still exits 0,
+            // leaving an empty file — don't upload that.
+            if (Files.size(thumb) == 0) {
+                throw new IOException("ffmpeg produced an empty thumbnail (clip shorter than the seek point?)");
+            }
+
+            s3Service.putObject(thumb, S3Service.thumbKey(id), "image/jpeg");
+        } catch (Exception e) {
+            System.out.println("Thumbnail generation failed for " + id + ": " + e.getMessage());
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+        } finally {
+            if (thumb != null) {
+                try {
+                    Files.deleteIfExists(thumb);
+                } catch (IOException ignored) {
+                    // temp file cleanup is best-effort
+                }
+            }
         }
     }
 
