@@ -1,18 +1,38 @@
 /* Shared layout for the two review surfaces (Record's review phase and a
-   Sessions detail). The video is STICKY on the left: clicking a word in the
-   transcript seeks the video, so the video must never scroll out of sight —
-   that's the core interaction of the whole app. */
+   Sessions detail). One centered column: the video sits on top at a generous
+   size, with metrics / transcript / feedback stacked beneath it.
+
+   The video is STICKY under the top bar. Clicking a word in the transcript
+   seeks the video, so the video must never scroll out of sight — that's the
+   core interaction of the whole app, and a plain stacked layout silently
+   breaks it. */
+
+/* Narrower than the default shell so the column reads as centered rather than
+   as a wide page with a video floating in it. Doubled specificity so it beats
+   `.page` regardless of stylesheet order. */
+.page.page-review {
+  max-width: 880px;
+}
 
 .review {
-  display: grid;
-  grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: var(--s6);
-  align-items: start;
 }
 
 .review-media {
   position: sticky;
-  top: calc(var(--topbar-h) + var(--s5));
+  top: var(--topbar-h);
+  z-index: 20; /* under the top bar (40), over the scrolling transcript */
+  width: 100%;
+  /* Cap the width from the viewport HEIGHT: a pinned 16:9 video would
+     otherwise eat the screen on short displays. Scaling the whole box keeps
+     the aspect ratio, which a max-height + letterbox would not. */
+  max-width: calc((100svh - var(--topbar-h) - 12rem) * 16 / 9);
+  margin-inline: auto;
+  padding-block: var(--s4) var(--s3);
+  /* Opaque, so the transcript scrolls *underneath* rather than through it. */
+  background: var(--bg);
 }
 
 .review-video {
@@ -27,8 +47,8 @@
 .review-media-foot {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--s3);
+  justify-content: center;
+  gap: var(--s5);
   margin-top: var(--s3);
 }
 
@@ -42,7 +62,7 @@
 /* --- the prompt that was answered ------------------------------------ */
 
 .review-prompt {
-  margin-bottom: var(--s6);
+  margin-bottom: var(--s5);
 }
 
 .review-prompt-meta {
@@ -61,14 +81,19 @@
   max-width: 60ch;
 }
 
-@media (max-width: 980px) {
-  .review {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--s6);
+/* Sticky only pays off when there's room left for the transcript beside it.
+   On a short viewport a pinned video is most of the screen, so let it scroll. */
+@media (max-height: 720px) {
+  .review-media {
+    position: static;
+    max-width: 100%;
   }
+}
 
+@media (max-width: 980px) {
   /* Sticky would eat most of a phone screen — let it scroll instead. */
   .review-media {
     position: static;
+    max-width: 100%;
   }
 }

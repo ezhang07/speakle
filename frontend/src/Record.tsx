@@ -428,7 +428,7 @@ function Record() {
   /* =============================================================== review */
 
   return (
-    <div className="page rise">
+    <div className="page page-review rise">
       {loading && (
         <div className="transcribing">
           <div className="transcribing-wave" aria-hidden="true">
