@@ -1,0 +1,67 @@
+/* The confirm modal. The <dialog> element itself is stripped bare and the
+   card lives in .confirm-inner, so a backdrop click can be told apart from a
+   click on the content. */
+
+.confirm {
+  margin: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  overflow: visible;
+}
+
+.confirm::backdrop {
+  background: rgba(8, 10, 14, 0.62);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.confirm-inner {
+  width: min(92vw, 400px);
+  padding: var(--s5);
+  background: var(--bg-elev);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+
+.confirm[open] .confirm-inner {
+  animation: confirm-in var(--med) var(--ease);
+}
+
+@keyframes confirm-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confirm[open] .confirm-inner {
+    animation: none;
+  }
+}
+
+.confirm-title {
+  font-family: var(--display);
+  font-size: 1.125rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.confirm-body {
+  margin: var(--s3) 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s2);
+  margin-top: var(--s5);
+}

@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from './AuthContext'
+import ConfirmDialog from './ConfirmDialog'
 import './Layout.css'
 
 /** The persistent app frame: a slim top bar over the routed page.
@@ -8,8 +10,10 @@ import './Layout.css'
 function Layout() {
   const { token, logout } = useAuth()
   const navigate = useNavigate()
+  const [confirmLogout, setConfirmLogout] = useState(false)
 
   function handleLogout() {
+    setConfirmLogout(false)
     logout()
     navigate('/')
   }
@@ -40,7 +44,7 @@ function Layout() {
                 <button
                   type="button"
                   className="btn btn-ghost btn-sm"
-                  onClick={handleLogout}
+                  onClick={() => setConfirmLogout(true)}
                 >
                   Log out
                 </button>
@@ -62,6 +66,15 @@ function Layout() {
       <main className="app-main">
         <Outlet />
       </main>
+
+      <ConfirmDialog
+        open={confirmLogout}
+        title="Log out?"
+        body="You'll need to sign back in to record or review sessions."
+        confirmLabel="Log out"
+        onConfirm={handleLogout}
+        onCancel={() => setConfirmLogout(false)}
+      />
     </div>
   )
 }

@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import Transcript from './Transcript'
 import Metrics from './Metrics'
 import Feedback from './Feedback'
+import ConfirmDialog from './ConfirmDialog'
 import { useAuthedFetch } from './useAuthedFetch'
 import { computeAverages } from './averages'
 import type { VideoUrlResponse, Session, TranscriptData } from './types'
@@ -83,6 +84,8 @@ function Sessions() {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [error, setError] = useState(false)
     const [videoURL, setVideoURL] = useState<string | null>(null);
+    // Which session the delete dialog is asking about; null when it's closed.
+    const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
     const playbackRef = useRef<HTMLVideoElement>(null);
 
@@ -157,7 +160,7 @@ function Sessions() {
         const parsed = JSON.parse(selected.transcript) as TranscriptData;
 
         return (
-            <div className="page rise">
+            <div className="page page-review rise">
                 <button
                     type="button"
                     className="btn btn-ghost btn-sm back-link"
@@ -196,7 +199,7 @@ function Sessions() {
                             <button
                                 type="button"
                                 className="btn btn-danger btn-sm"
-                                onClick={() => deleteSession(selected.sessionId)}
+                                onClick={() => setPendingDelete(selected.sessionId)}
                             >
                                 Delete session
                             </button>
@@ -219,6 +222,20 @@ function Sessions() {
                         <Feedback summary={selected.summary} />
                     </div>
                 </div>
+
+                <ConfirmDialog
+                    open={pendingDelete !== null}
+                    title="Delete this session?"
+                    body="The recording, transcript and metrics are removed for good. This can't be undone."
+                    confirmLabel="Delete"
+                    destructive
+                    onConfirm={() => {
+                        const id = pendingDelete
+                        setPendingDelete(null)
+                        if (id) deleteSession(id)
+                    }}
+                    onCancel={() => setPendingDelete(null)}
+                />
             </div>
         )
     }
