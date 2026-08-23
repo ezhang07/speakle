@@ -18,6 +18,9 @@ const MAX_POLL_MS = 3 * 60 * 1000
 const PREP_SECONDS = 15
 const RECORDING_SECONDS = 20
 
+// How many of a category's most recent prompts are barred from being drawn again.
+const RECENT_PROMPT_MEMORY = 10
+
 // Promise that lets us `await sleep(...)` between polls.
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -47,8 +50,12 @@ function Record() {
   const [prompt, setPrompt] = useState<Prompt | null>(null)
   const [summary, setSummary] = useState<string | null>(null)
 
-  // Past sessions, loaded once on mount purely so the review screen can say
-  // "vs your average". Never blocks the recording flow.
+  // Id of the session on the review screen, so it can be left out of its own
+  // average now that finished sessions get prepended to `history`.
+  const [sessionId, setSessionId] = useState<string | null>(null)
+
+  // Past sessions, loaded on mount so the review screen can say "vs your average"
+  // and selectPrompt can avoid prompts you've just done. Never blocks recording.
   const [history, setHistory] = useState<Session[]>([])
 
   const constraints: MediaStreamConstraints = { audio: true, video: { width: 1280, height: 720, resizeMode: "crop-and-scale"} };
@@ -65,7 +72,7 @@ function Record() {
 
   const [secondsRecording, setSecondsRecording] = useState(RECORDING_SECONDS)
 
-  const averages = computeAverages(history)
+  const averages = computeAverages(history, sessionId ?? undefined)
 
 
 
@@ -152,6 +159,12 @@ function Record() {
         timeToFirstPoint: session.timeToFirstPoint,
       })
       setSummary(session.summary)
+      setSessionId(session.sessionId)
+
+      // Keep `history` current within this mount: reset() returns to setup without
+      // remounting, so a second take in the same sitting would otherwise draw both
+      // its prompt and its average from a snapshot taken before the first existed.
+      setHistory(prev => [session, ...prev])
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -222,6 +235,7 @@ function Record() {
     setResult(null);
     setMetrics(null);
     setSummary(null);
+    setSessionId(null);
     setError(null);
     setPrompt(null);
     setPhase('setup');
@@ -235,7 +249,22 @@ function Record() {
 
   function selectPrompt(cat: 'casual' | 'behavioural') {
     const filteredPrompts = prompts.filter(p => p.category === cat);
-    setPrompt(filteredPrompts[Math.floor(Math.random() * filteredPrompts.length)]);
+    const pastPrompts = history.filter(s => s.promptCategory === cat);
+    
+    // `history` arrives newest-first (findByUserIdOrderByCreatedAtDesc), so this
+    // category's most recent prompts are just the front of pastPrompts. Matching
+    // on text, not index, keeps this stable when the prompt list is reordered.
+    const recent = new Set(
+      pastPrompts.slice(0, RECENT_PROMPT_MEMORY).map(s => s.promptText)
+    );
+
+    // Fall back to the full pool if recency ruled out everything: indexing an empty
+    // array yields undefined rather than throwing, so this would fail silently and
+    // hand you a blank prompt to speak to.
+    const fresh = filteredPrompts.filter(p => !recent.has(p.text));
+    const candidates = fresh.length > 0 ? fresh : filteredPrompts;
+
+    setPrompt(candidates[Math.floor(Math.random() * candidates.length)]);
     setPhase('prep');
   }
 
