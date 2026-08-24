@@ -55,11 +55,29 @@ interface StatTileProps {
   /** When set, the tile becomes a button that seeks the video to this moment. */
   seekTo?: number | null;
   onSeek?: (time: number) => void;
+  /** Plain-language definition, revealed by the tile's "?" button. */
+  hint: string;
+  /** Label of the tile whose panel is open, so only one shows at a time. */
+  openHint: string | null;
+  onOpenHint: (label: string | null) => void;
 }
 
-function StatTile({ label, value, format, unit, average, seekTo, onSeek }: StatTileProps) {
+function StatTile({
+  label,
+  value,
+  format,
+  unit,
+  average,
+  seekTo,
+  onSeek,
+  hint,
+  openHint,
+  onOpenHint,
+}: StatTileProps) {
   const animated = useCountUp(value)
   const seekable = seekTo !== null && seekTo !== undefined && onSeek !== undefined
+  const hintOpen = openHint === label
+  const panelId = `stat-hint-${label.replace(/\W+/g, '-').toLowerCase()}`
 
   // Deliberately no good/bad colouring — the number is neutral, the comparison
   // to your own past is what makes it mean something.
@@ -78,29 +96,64 @@ function StatTile({ label, value, format, unit, average, seekTo, onSeek }: StatT
         {unit && animated !== null && <span className="stat-unit">{unit}</span>}
       </span>
       <span className="stat-label">{label}</span>
-      <span className="stat-delta">{delta() ?? (seekable ? 'Jump to this moment' : ' ')}</span>
+      <span className="stat-delta">{delta() ?? (seekable ? 'Jump to this moment' : ' ')}</span>
     </>
   )
 
-  if (seekable) {
-    return (
+  // The card is a plain div and the *body* is the button, because seekable tiles
+  // and the "?" are two separate controls — nesting a button inside a button is
+  // invalid and swallows one of the two clicks.
+  return (
+    <div className="stat">
+      {seekable ? (
+        <button
+          type="button"
+          className="stat-body stat-seek"
+          onClick={() => onSeek(seekTo)}
+          title="Jump to this moment in the video"
+        >
+          {body}
+        </button>
+      ) : (
+        <div className="stat-body">{body}</div>
+      )}
+
       <button
         type="button"
-        className="stat stat-seek"
-        onClick={() => onSeek(seekTo)}
-        title="Jump to this moment in the video"
+        className="stat-help"
+        aria-expanded={hintOpen}
+        aria-controls={panelId}
+        aria-label={`What is ${label.toLowerCase()}?`}
+        onClick={() => onOpenHint(hintOpen ? null : label)}
       >
-        {body}
+        ?
       </button>
-    )
-  }
 
-  return <div className="stat">{body}</div>
+      {/* Rendered even when closed, hidden via `hidden`, so aria-controls always
+          points at a real element. */}
+      <p className="stat-panel" id={panelId} hidden={!hintOpen}>
+        {hint}
+      </p>
+    </div>
+  )
 }
 
 const int = (n: number) => String(Math.round(n))
 const one = (n: number) => n.toFixed(1)
 const two = (n: number) => n.toFixed(2)
+
+const HINTS = {
+  fillerCount:
+    'How often you said “um,” “uh,” or “like.” Words that didn’t provide value and muddied your delivery.',
+  wordsPerMinute:
+    'Your speaking pace. See how it shifts when you’re nervous or unsure.',
+  longestPause:
+    'The longest silence between two words. See where you froze up, figure out why, and improve upon it. Click the tile to jump to it.',
+  timeToFirstPoint:
+    'How long you spoke before reaching the point you were actually making. Everything before it was warm-up. Read off your transcript by AI, so treat it as a second opinion rather than a fact. Click the tile to jump there.',
+  bloatRatio:
+    'Your word count divided by the words needed to say the same thing tightly. 1.0 means you were already concise; 2.0 means about twice as many words as the idea needed. The concise version is AI-written, so this is a comment on padding, not a measurement.',
+}
 
 function Metrics({
   wordsPerMinute,
@@ -112,6 +165,32 @@ function Metrics({
   averages,
   onSeek,
 }: MetricsProps) {
+  // Held here rather than per-tile so opening one panel closes any other.
+  const [openHint, setOpenHint] = useState<string | null>(null)
+
+  // Esc and a click outside dismiss the panel — the two things a native popover
+  // would give for free, and the reason a bare hover tooltip isn't enough (it
+  // reaches neither touch nor keyboard).
+  useEffect(() => {
+    if (openHint === null) return
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpenHint(null)
+    }
+    function onPointerDown(e: PointerEvent) {
+      if (!(e.target as HTMLElement).closest('.stat')) setOpenHint(null)
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('pointerdown', onPointerDown)
+    }
+  }, [openHint])
+
+  const hintControls = { openHint, onOpenHint: setOpenHint }
+
   return (
     <section className="metrics">
       <div className="metrics-head">
@@ -129,12 +208,16 @@ function Metrics({
           value={fillerCount}
           format={int}
           average={averages?.fillerCount}
+          hint={HINTS.fillerCount}
+          {...hintControls}
         />
         <StatTile
           label="Words / min"
           value={wordsPerMinute}
           format={int}
           average={averages?.wordsPerMinute}
+          hint={HINTS.wordsPerMinute}
+          {...hintControls}
         />
         <StatTile
           label="Longest pause"
@@ -144,6 +227,8 @@ function Metrics({
           average={averages?.longestPause}
           seekTo={longestPauseTimeStamp}
           onSeek={onSeek}
+          hint={HINTS.longestPause}
+          {...hintControls}
         />
         <StatTile
           label="Time to first point"
@@ -153,64 +238,18 @@ function Metrics({
           average={averages?.timeToFirstPoint}
           seekTo={timeToFirstPoint === null ? null : timeToFirstPoint}
           onSeek={onSeek}
+          hint={HINTS.timeToFirstPoint}
+          {...hintControls}
         />
         <StatTile
           label="Bloat ratio"
           value={bloatRatio}
           format={two}
           average={averages?.bloatRatio}
+          hint={HINTS.bloatRatio}
+          {...hintControls}
         />
       </div>
-
-      {/* Collapsed by default: the numbers are the point, the definitions are
-          for the first few sessions and for the two metrics nobody can guess. */}
-      <details className="metrics-glossary">
-        <summary>What these mean</summary>
-
-        <dl>
-          <div>
-            <dt>Filler words</dt>
-            <dd>How often you said “um,” “uh,” or “like.” Words that didn't provide value and muddied your delivery.</dd>
-          </div>
-          <div>
-            <dt>Words / min</dt>
-            <dd>
-              Your speaking pace. Neither fast nor slow is better — it’s here so
-              you can watch how it shifts when you’re nervous or unsure.
-            </dd>
-          </div>
-          <div>
-            <dt>Longest pause</dt>
-            <dd>
-              The longest silence between two words. The gap before your very
-              first word counts too, so a slow start shows up here. Click the
-              tile to jump to it.
-            </dd>
-          </div>
-          <div>
-            <dt>Time to first point</dt>
-            <dd>
-              How long you spoke before reaching the point you were actually
-              making — everything before it was warm-up. Click the tile to jump
-              there and hear it.
-            </dd>
-          </div>
-          <div>
-            <dt>Bloat ratio</dt>
-            <dd>
-              Your word count divided by the words needed to say the same thing
-              tightly. 1.0 means you were already tight; 2.0 means about twice
-              as many words as the idea needed.
-            </dd>
-          </div>
-        </dl>
-
-        <p className="metrics-glossary-note">
-          Time to first point and bloat ratio are read off your transcript by AI
-          rather than measured, so treat them as a second opinion rather than a
-          fact. If that step fails they show as —.
-        </p>
-      </details>
     </section>
   )
 }
