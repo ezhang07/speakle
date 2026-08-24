@@ -5,7 +5,7 @@ import {useNavigate} from 'react-router-dom'
 import Transcript from './Transcript'
 import Metrics from './Metrics'
 import Feedback from './Feedback'
-import type { Prompt, TranscriptData, Metrics as MetricsData, UploadUrlResponse, JobResponse, JobStatusResponse, Session } from './types'
+import type { Prompt, SampledCategory, TranscriptData, Metrics as MetricsData, UploadUrlResponse, JobResponse, JobStatusResponse, Session } from './types'
 import {prompts} from './Prompts'
 import { useAuthedFetch } from './useAuthedFetch'
 import { computeAverages } from './averages'
@@ -20,6 +20,10 @@ const RECORDING_SECONDS = 60
 
 // How many of a category's most recent prompts are barred from being drawn again.
 const RECENT_PROMPT_MEMORY = 10
+
+// `Session.promptText` is a bare String on the backend, so Hibernate makes it
+// varchar(255) — going over throws when the job saves
+const MAX_CUSTOM_PROMPT_CHARS = 200
 
 // Promise that lets us `await sleep(...)` between polls.
 function sleep(ms: number): Promise<void> {
@@ -53,6 +57,11 @@ function Record() {
   // Id of the session on the review screen, so it can be left out of its own
   // average now that finished sessions get prepended to `history`.
   const [sessionId, setSessionId] = useState<string | null>(null)
+
+  // The custom-prompt draft. `null` means the input isn't showing — one piece of
+  // state rather than an open/text pair, so closing can't leave stale text
+  // behind to reappear the next time it's opened.
+  const [customText, setCustomText] = useState<string | null>(null)
 
   // Past sessions, loaded on mount so the review screen can say "vs your average"
   // and selectPrompt can avoid prompts you've just done. Never blocks recording.
@@ -238,6 +247,7 @@ function Record() {
     setSessionId(null);
     setError(null);
     setPrompt(null);
+    setCustomText(null);
     setPhase('setup');
   }
 
@@ -247,7 +257,7 @@ function Record() {
     playbackRef.current.play();
   }
 
-  function selectPrompt(cat: 'casual' | 'behavioural') {
+  function selectPrompt(cat: SampledCategory) {
     const filteredPrompts = prompts.filter(p => p.category === cat);
     const pastPrompts = history.filter(s => s.promptCategory === cat);
     
@@ -265,6 +275,16 @@ function Record() {
     const candidates = fresh.length > 0 ? fresh : filteredPrompts;
 
     setPrompt(candidates[Math.floor(Math.random() * candidates.length)]);
+    setPhase('prep');
+  }
+
+  // select custom prompt, guardrails for empty text
+  function startCustomPrompt() {
+    const text = customText?.trim();
+    if (!text) return;
+
+    setPrompt({ text, category: 'custom' });
+    setCustomText(null);
     setPhase('prep');
   }
 
@@ -374,11 +394,12 @@ function Record() {
           own and records for {RECORDING_SECONDS} seconds.
         </p>
 
+        {customText === null ? (
         <div className="prompt-choice">
           <button type="button" className="prompt-card" onClick={() => selectPrompt('casual')}>
             <span className="prompt-card-title">Casual</span>
             <span className="prompt-card-desc">
-              Practice your speech in a conversational setting. 
+              Practice your speech in a conversational setting.
             </span>
           </button>
 
@@ -388,7 +409,63 @@ function Record() {
               Practice your speech in an interview setting.
             </span>
           </button>
+
+          <button type="button" className="prompt-card" onClick={() => setCustomText('')}>
+            <span className="prompt-card-title">Your own</span>
+            <span className="prompt-card-desc">
+              Practice your speech in your own setting.
+            </span>
+          </button>
         </div>
+        ) : (
+          <form
+            className="custom-prompt"
+            onSubmit={e => {
+              e.preventDefault()
+              startCustomPrompt()
+            }}
+          >
+            <label className="custom-prompt-label" htmlFor="custom-prompt-input">
+              What do you want to speak about?
+            </label>
+
+            <textarea
+              id="custom-prompt-input"
+              className="input custom-prompt-input"
+              value={customText}
+              onChange={e => setCustomText(e.target.value)}
+              maxLength={MAX_CUSTOM_PROMPT_CHARS}
+              rows={3}
+              placeholder="e.g. Describe a time you had to rebuild trust with a teammate"
+              autoFocus
+            />
+
+            <div className="custom-prompt-foot">
+              <span className="meta tabular">
+                {customText.length} / {MAX_CUSTOM_PROMPT_CHARS}
+              </span>
+
+              <div className="custom-prompt-actions">
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setCustomText(null)}
+                >
+                  Back
+                </button>
+                {/* Disabled rather than validated on submit, so an all-whitespace
+                    prompt can't start a countdown over a blank overlay. */}
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={customText.trim() === ''}
+                >
+                  Start
+                </button>
+              </div>
+            </div>
+          </form>
+        )}
       </div>
     )
   }

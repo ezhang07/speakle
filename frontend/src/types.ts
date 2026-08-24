@@ -25,7 +25,7 @@ export interface Session {
   sessionId: string;
   userId: string | null;
   promptText: string;
-  promptCategory: 'casual' | 'behavioural';
+  promptCategory: PromptCategory;
   transcript: string;
   createdAt: string;
   durationSeconds: number;
@@ -40,9 +40,17 @@ export interface Session {
   thumbUrl: string;
 }
 
+/** 'casual' and 'behavioural' are drawn from the static list in Prompts.ts;
+ *  'custom' is typed by the user, so it never appears there. Stored as a plain
+ *  String on the backend, so adding a member needs no schema change. */
+export type PromptCategory = 'casual' | 'behavioural' | 'custom';
+
+/** The two categories that can actually be sampled from the prompt library. */
+export type SampledCategory = Exclude<PromptCategory, 'custom'>;
+
 export interface Prompt {
   text: string;
-  category: 'casual' | 'behavioural';
+  category: PromptCategory;
 }
 
 /** Averages of each metric across the user's other sessions (see averages.ts).

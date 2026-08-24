@@ -76,6 +76,42 @@
   color: var(--accent);
 }
 
+/* ------------------------------------------------- custom prompt input -- */
+
+/* Replaces the three cards in place, so the setup screen keeps its width and
+   the layout doesn't jump when you switch between them. */
+.custom-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  max-width: 620px;
+}
+
+.custom-prompt-label {
+  font-size: 0.9375rem;
+  color: var(--text-muted);
+}
+
+.custom-prompt-input {
+  resize: vertical;
+  min-height: 5.5rem;
+  line-height: 1.5;
+}
+
+.custom-prompt-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  flex-wrap: wrap;
+}
+
+.custom-prompt-actions {
+  display: flex;
+  gap: var(--s3);
+  margin-left: auto;
+}
+
 /* ---------------------------------------------------------- the stage -- */
 
 /* Covers the app shell entirely. During a take, nothing else exists. */
