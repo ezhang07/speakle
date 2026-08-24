@@ -169,6 +169,63 @@ function Metrics({
           average={averages?.bloatRatio}
         />
       </div>
+
+      {/* Collapsed by default: the numbers are the point, the definitions are
+          for the first few sessions and for the two metrics nobody can guess. */}
+      <details className="metrics-glossary">
+        <summary>What these mean</summary>
+
+        <dl>
+          <div>
+            <dt>Filler words</dt>
+            <dd>How often you said “um,” “uh,” or “like.”</dd>
+          </div>
+          <div>
+            <dt>Fillers / min</dt>
+            <dd>
+              The same count as a rate, so a 40-second take and a two-minute one
+              can be compared.
+            </dd>
+          </div>
+          <div>
+            <dt>Words / min</dt>
+            <dd>
+              Your speaking pace. Neither fast nor slow is better — it’s here so
+              you can watch how it shifts when you’re nervous or unsure.
+            </dd>
+          </div>
+          <div>
+            <dt>Longest pause</dt>
+            <dd>
+              The longest silence between two words. The gap before your very
+              first word counts too, so a slow start shows up here. Click the
+              tile to jump to it.
+            </dd>
+          </div>
+          <div>
+            <dt>Time to first point</dt>
+            <dd>
+              How long you spoke before reaching the point you were actually
+              making — everything before it was warm-up. Click the tile to jump
+              there and hear it.
+            </dd>
+          </div>
+          <div>
+            <dt>Bloat ratio</dt>
+            <dd>
+              Your word count divided by the words needed to say the same thing
+              tightly. 1.0 means you were already tight; 2.0 means about twice
+              as many words as the idea needed.
+            </dd>
+          </div>
+        </dl>
+
+        <p className="metrics-glossary-note">
+          Time to first point and bloat ratio are read off your transcript by AI
+          rather than measured, so treat them as a second opinion rather than a
+          fact. If that step fails they show as —.
+        </p>
+      </details>
     </section>
   )
 }

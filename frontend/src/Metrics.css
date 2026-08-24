@@ -59,6 +59,79 @@
   min-height: 1.2em;
 }
 
+/* --- glossary: what the six numbers actually mean --- */
+
+.metrics-glossary {
+  margin-top: var(--s4);
+}
+
+/* Native marker swapped for a chevron that rotates with [open], so the control
+   reads as a disclosure rather than a link. */
+.metrics-glossary > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  width: fit-content;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  list-style: none;
+  transition: color var(--fast) var(--ease);
+}
+
+.metrics-glossary > summary::-webkit-details-marker {
+  display: none;
+}
+
+.metrics-glossary > summary::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform var(--fast) var(--ease);
+}
+
+.metrics-glossary[open] > summary::before {
+  transform: rotate(45deg);
+}
+
+.metrics-glossary > summary:hover {
+  color: var(--accent);
+}
+
+.metrics-glossary dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--s4);
+  margin: var(--s3) 0 0;
+  padding: var(--s4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+}
+
+.metrics-glossary dt {
+  margin-bottom: 2px;
+  font-size: 0.875rem;
+  color: var(--text);
+}
+
+.metrics-glossary dd {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.metrics-glossary-note {
+  margin: var(--s3) 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--text-faint);
+}
+
 /* --- seekable tiles: the only interactive ones, so they get the accent --- */
 
 .stat-seek {
