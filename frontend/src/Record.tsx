@@ -16,7 +16,7 @@ const MAX_POLL_MS = 3 * 60 * 1000
 
 // Length of each phase, in seconds.
 const PREP_SECONDS = 15
-const RECORDING_SECONDS = 20
+const RECORDING_SECONDS = 60
 
 // How many of a category's most recent prompts are barred from being drawn again.
 const RECENT_PROMPT_MEMORY = 10
@@ -319,7 +319,7 @@ function Record() {
     };
   }, [phase]);
 
-  // 15s timer for user after selecting prompt, prep for 20 seconds before auto-starting rec
+  // 15s timer for user after selecting prompt, prep for PREP_SECONDS seconds before auto-starting rec
   useEffect(() => {
     if (phase !== 'prep') return;
 
