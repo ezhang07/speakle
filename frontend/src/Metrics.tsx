@@ -5,7 +5,6 @@ import type { MetricAverages } from './types'
 interface MetricsProps {
   wordsPerMinute: number;
   fillerCount: number;
-  fillersPerMinute: number;
   longestPause: number;
   longestPauseTimeStamp: number;
   bloatRatio: number | null;
@@ -106,7 +105,6 @@ const two = (n: number) => n.toFixed(2)
 function Metrics({
   wordsPerMinute,
   fillerCount,
-  fillersPerMinute,
   longestPause,
   longestPauseTimeStamp,
   bloatRatio,
@@ -131,12 +129,6 @@ function Metrics({
           value={fillerCount}
           format={int}
           average={averages?.fillerCount}
-        />
-        <StatTile
-          label="Fillers / min"
-          value={fillersPerMinute}
-          format={one}
-          average={averages?.fillersPerMinute}
         />
         <StatTile
           label="Words / min"
@@ -178,14 +170,7 @@ function Metrics({
         <dl>
           <div>
             <dt>Filler words</dt>
-            <dd>How often you said “um,” “uh,” or “like.”</dd>
-          </div>
-          <div>
-            <dt>Fillers / min</dt>
-            <dd>
-              The same count as a rate, so a 40-second take and a two-minute one
-              can be compared.
-            </dd>
+            <dd>How often you said “um,” “uh,” or “like.” Words that didn't provide value and muddied your delivery.</dd>
           </div>
           <div>
             <dt>Words / min</dt>

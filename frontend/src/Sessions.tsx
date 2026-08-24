@@ -210,7 +210,6 @@ function Sessions() {
                         <Metrics
                             wordsPerMinute={selected.wordsPerMinute}
                             fillerCount={selected.fillerCount}
-                            fillersPerMinute={selected.fillersPerMinute}
                             longestPause={selected.longestPause}
                             longestPauseTimeStamp={selected.longestPauseTimeStamp}
                             bloatRatio={selected.bloatRatio}

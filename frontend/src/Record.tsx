@@ -505,7 +505,6 @@ function Record() {
               <Metrics
                 wordsPerMinute={metrics.wordsPerMinute}
                 fillerCount={metrics.fillerCount}
-                fillersPerMinute={metrics.fillersPerMinute}
                 longestPause={metrics.longestPause}
                 longestPauseTimeStamp={metrics.longestPauseTimeStamp}
                 bloatRatio={metrics.bloatRatio}
