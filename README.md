@@ -29,8 +29,8 @@ a few things going on behind that loop:
 - **backend**: Java, Spring Boot
 - **transcription**: Python, FastAPI, faster-whisper, ffmpeg
 - **ai feedback**: Google Gemini
-- **data & storage**: Postgres (JPA/Hibernate), AWS S3
-- **infra**: Docker Compose
+- **data & storage**: Postgres (JPA/Hibernate), AWS (S3, RDS)
+- **infra**: Docker Compose, AWS EC2
 
 
 ## what's to come
