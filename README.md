@@ -2,7 +2,7 @@
 
 a speaking-practice coach
 
-i was inspired by those instagram reels, where people would record themselves speaking on a topic everyday in order to remove filler words in their speech. most of these people saw great progress, and i thought that it would be something that i wanted to improve as well. however, i noticed the friction of having to record yourself, deciding what you wanted to talk about, and rewatching the video to count your filler words. so that's why i decided to build Speakle.
+the idea came alive when i saw a bunch of instagram reels of people recorded themselves speaking everyday to improve their speech. everyone who stuck to it saw big speech gains, such as less filler words, and more cohesion. i tried it out for myself, but i noticed there was a ton of friction inhibiting consistency: deciding what you wanted to talk about, scattered recordings, and re-watching your playback videos multiple times to count filler words and if what you said actually made sense. that's why i decided to build Speakle.
 
 ## how speakle works
 
@@ -18,10 +18,15 @@ each user holds its own data. recordings and feedback are private to you.
 
 a few things going on behind that loop:
 
-- **direct browser S3 uploads**: the video bytes never pass through the backend. the browser asks for a short-lived **presigned S3 url**, then uploads the recording straight to S3 itself. the backend only signs the url, so it never has to hold a big file upload open or eat the bandwidth. playback works the same way — a presigned url the `<video>` streams direct from S3.
+- **direct browser S3 uploads**: the video bytes never pass through the backend. the browser asks for a short-lived **presigned S3 url**, then uploads the recording straight to S3 itself. the backend only signs the url, so it never has to hold a big file upload open or eat the bandwidth. playback works the same way, where a presigned url from S3 can directly stream the video.
+
 - **two layers of feedback**: the deterministic metrics (filler count, words per minute, longest pause) are computed in plain Java over the timestamped transcript. there were some more "ambiguous" metrics that i thought would help, such as a bloat ratio (gemini creates a super concise version of what you said, then divide your transcript's length with its length), time-to-first-point (gemini uses its discretion to determine where you first started answering the prompt), and a written summary. these all came from the **Gemini API**, prompted to return structured JSON so the results drop straight into the session. the LLM points at *what* to look at; the exact math stays deterministic.
+  
 - **transcription as its own service**: i decided on self-hosting whisper rather than using the **OpenAI API**, because it allowed me to have more control on the transcription process from the model. whisper is trained on clean subtitles and, hence, drops filler words like "um" and "uh". in speakle's case, these filler words are exactly what we WANT to keep, rather than filter out, so i primed the model's context with some of these disfluencies, to bias the model into actually retaining them in the transcript. self-hosting also caused some detours in deployment, such as making it run as a separate FastAPI service, to convert from processing locally to HTTP calls.
+  
 - **everything containerized**: the backend, whisper service, and Postgres all run together under a single `docker compose up`, so the whole stack comes up with one command. it was overall very cool learning how to decouple all these services, and working with real infra for the first time.
+
+- **first experiences with aws**: aws held a pretty vital role in terms of deployment and storage. i used aws s3 for video storage, taking advantage of its 11 9s of object durability and presigned URLs to handle video storage and transfers without burdening the backend. for relational data, i migrated from a self-hosted docker postgreSQL setup to aws rds for postgreSQL. rds offered durability through automated backups, which removed the risk of serious data loss in cases of hosting failure. i hosted the microservices on an aws ec2 instance running docker compose (essentially all my containers), and this helped demystify how deployment truly works behind the abstractions.
 
 ## tech stack
 
