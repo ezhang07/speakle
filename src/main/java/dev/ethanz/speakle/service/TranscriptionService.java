@@ -50,7 +50,13 @@ public class TranscriptionService {
                 .connectTimeout(Duration.ofSeconds(5))
                 .build();
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(jdkClient);
-        factory.setReadTimeout(Duration.ofMinutes(5)); // transcription is slow; bound it like the old subprocess
+        // Sized against the LONGEST selectable recording on a DEGRADED box, not the nominal
+        // case: 3 minutes of audio transcribes in ~90-120s normally, but t3.small is
+        // burstable and whisper pins both cores, so with the CPU-credit balance empty the
+        // same job runs 3-5x slower. At 5 minutes a legitimate-but-slow take died here and
+        // was lost outright; 10 lets it finish. The frontend's MAX_POLL_MS must stay above
+        // this so the browser sees the job reach FAILED rather than timing out first.
+        factory.setReadTimeout(Duration.ofMinutes(10));
         this.whisperClient = RestClient.builder()
                 .baseUrl(whisperServiceUrl)
                 .requestFactory(factory)

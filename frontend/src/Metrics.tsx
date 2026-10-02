@@ -4,7 +4,7 @@ import type { MetricAverages } from './types'
 
 interface MetricsProps {
   wordsPerMinute: number;
-  fillerCount: number;
+  fillersPerMinute: number;
   longestPause: number;
   longestPauseTimeStamp: number;
   bloatRatio: number | null;
@@ -143,8 +143,8 @@ const one = (n: number) => n.toFixed(1)
 const two = (n: number) => n.toFixed(2)
 
 const HINTS = {
-  fillerCount:
-    'How often you said “um,” “uh,” or “like.” Words that didn’t provide value and muddied your delivery.',
+  fillersPerMinute:
+    'How often you said “um,” “uh,” or “like” — per minute of speaking, rather than a raw count. Words that didn’t provide value and muddied your delivery. A rate because takes can be different lengths, and a count would quietly reward the shorter one.',
   wordsPerMinute:
     'Your speaking pace. See how it shifts when you’re nervous or unsure.',
   longestPause:
@@ -157,7 +157,7 @@ const HINTS = {
 
 function Metrics({
   wordsPerMinute,
-  fillerCount,
+  fillersPerMinute,
   longestPause,
   longestPauseTimeStamp,
   bloatRatio,
@@ -204,11 +204,11 @@ function Metrics({
 
       <div className="stat-grid">
         <StatTile
-          label="Filler words"
-          value={fillerCount}
-          format={int}
-          average={averages?.fillerCount}
-          hint={HINTS.fillerCount}
+          label="Fillers / min"
+          value={fillersPerMinute}
+          format={one}
+          average={averages?.fillersPerMinute}
+          hint={HINTS.fillersPerMinute}
           {...hintControls}
         />
         <StatTile

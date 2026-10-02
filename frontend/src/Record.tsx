@@ -12,11 +12,24 @@ import { computeAverages } from './averages'
 
 // how long between every poll request, plus max time we poll for in milliseconds
 const POLL_INTERVAL_MS = 2000
-const MAX_POLL_MS = 3 * 60 * 1000
+// Deliberately longer than the backend can take to give up on its own: the
+// whisper call has a 10-minute read timeout (TranscriptionService), and past
+// that the job reaches FAILED. Polling for less than that means a slow take
+// gets reported as "timed out" here while it goes on to succeed server-side —
+// the session exists and the user is never shown it. Keep this ABOVE the
+// backend's timeout whenever either number moves.
+const MAX_POLL_MS = 12 * 60 * 1000
 
-// Length of each phase, in seconds.
+// Length of the prep phase, in seconds.
 const PREP_SECONDS = 15
-const RECORDING_SECONDS = 60
+
+// Selectable recording lengths. Transcription cost scales with audio duration
+// (roughly half the recording's length on the deployed box, several times that
+// if its CPU-credit balance is empty), so this is a fixed set with a ceiling
+// rather than a free-form number. 3:00 is the ceiling the whisper timeout in
+// TranscriptionService is sized against — raising one means raising the other.
+const RECORDING_LENGTHS = [60, 90, 120, 180]
+const DEFAULT_RECORDING_SECONDS = 60
 
 // How many of a category's most recent prompts are barred from being drawn again.
 const RECENT_PROMPT_MEMORY = 10
@@ -33,6 +46,14 @@ function sleep(ms: number): Promise<void> {
 function formatClock(seconds: number): string {
   const safe = Math.max(0, seconds)
   return `${Math.floor(safe / 60)}:${String(safe % 60).padStart(2, '0')}`
+}
+
+// Same durations as formatClock, worded for a sentence — "records for 2:00"
+// reads like a timestamp, "records for 2 min" reads like a length.
+function formatLength(seconds: number): string {
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return s === 0 ? `${m} min` : `${m}:${String(s).padStart(2, '0')}`
 }
 
 // Circumference of the countdown ring (r=54), so the dash offset can be driven
@@ -79,7 +100,13 @@ function Record() {
   const [phase, setPhase] = useState<Phase>('setup')
   const [secondsBeforeRec, setSecondsBeforeRec] = useState(PREP_SECONDS)
 
-  const [secondsRecording, setSecondsRecording] = useState(RECORDING_SECONDS)
+  // How long the next take runs for, chosen on the setup screen. Deliberately
+  // NOT cleared by reset(): the length you picked last is the one you probably
+  // want again, and reset() returns to setup without remounting, so the choice
+  // survives a second take in the same sitting.
+  const [recordingSeconds, setRecordingSeconds] = useState(DEFAULT_RECORDING_SECONDS)
+
+  const [secondsRecording, setSecondsRecording] = useState(DEFAULT_RECORDING_SECONDS)
 
   const averages = computeAverages(history, sessionId ?? undefined)
 
@@ -360,20 +387,20 @@ function Record() {
   }, [phase, secondsBeforeRec]);
 
 
-  // 60s timer for recording
+  // Recording timer, counting down whichever length was picked on setup.
   useEffect(() => {
     if (!recording) return;
 
-    setSecondsRecording(RECORDING_SECONDS);
+    setSecondsRecording(recordingSeconds);
 
     const id = setInterval(() => {
       setSecondsRecording(s => s - 1);
     }, 1000);
 
     return () => clearInterval(id);
-  }, [recording]);
+  }, [recording, recordingSeconds]);
 
-  // once 60 seconds is up, change to review phase, stop the recording
+  // once the chosen length is up, change to review phase, stop the recording
   useEffect(() => {
     if (phase === 'recording' && secondsRecording <= 0) {
       setPhase('review');
@@ -391,8 +418,37 @@ function Record() {
         <h1>Pick a prompt</h1>
         <p className="record-lede">
           You get {PREP_SECONDS} seconds to think, then the camera starts on its
-          own and records for {RECORDING_SECONDS} seconds.
+          own and records for {formatLength(recordingSeconds)}.
         </p>
+
+        {/* A real radio group rather than three buttons: it's one choice out of
+            a fixed set, so the native grouping gives a single tab stop and
+            arrow-key movement for free. Sits above the swap below so it stays
+            visible whether you're picking a category or typing your own. */}
+        <fieldset className="duration-choice">
+          <legend className="duration-legend">Recording length</legend>
+          <div className="duration-options">
+            {RECORDING_LENGTHS.map(secs => (
+              <label
+                key={secs}
+                className={
+                  secs === recordingSeconds
+                    ? 'duration-option duration-option-on'
+                    : 'duration-option'
+                }
+              >
+                <input
+                  type="radio"
+                  name="recording-length"
+                  value={secs}
+                  checked={secs === recordingSeconds}
+                  onChange={() => setRecordingSeconds(secs)}
+                />
+                <span className="tabular">{formatClock(secs)}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
         {customText === null ? (
         <div className="prompt-choice">
@@ -541,7 +597,11 @@ function Record() {
             <i /><i /><i /><i /><i />
           </div>
           <h1>Transcribing</h1>
-          <p className="muted">This usually takes about half a minute.</p>
+          {/* Scales with the take instead of naming a fixed number, which stops
+              being true the moment the recording length is selectable. */}
+          <p className="muted">
+            This usually takes about half as long as the recording.
+          </p>
           {prompt && <p className="transcribing-prompt">&ldquo;{prompt.text}&rdquo;</p>}
         </div>
       )}
@@ -581,7 +641,7 @@ function Record() {
             <div className="review-body">
               <Metrics
                 wordsPerMinute={metrics.wordsPerMinute}
-                fillerCount={metrics.fillerCount}
+                fillersPerMinute={metrics.fillersPerMinute}
                 longestPause={metrics.longestPause}
                 longestPauseTimeStamp={metrics.longestPauseTimeStamp}
                 bloatRatio={metrics.bloatRatio}

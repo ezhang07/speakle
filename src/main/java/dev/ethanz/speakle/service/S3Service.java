@@ -64,8 +64,13 @@ public class S3Service {
         .key(key)
         .build();
 
+        // An hour, not minutes, because <video> re-requests byte ranges every time
+        // you seek — and seek-to-word IS the core interaction. If the URL expires
+        // while the review screen is still open, clicking a word 403s instead of
+        // seeking. Longer recordings make that likelier twice over: less of the
+        // file is buffered up front, and you spend longer reviewing it.
         GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
-        .signatureDuration(Duration.ofMinutes(10)) // how long URL stays valid
+        .signatureDuration(Duration.ofHours(1)) // how long URL stays valid
         .getObjectRequest(getRequest)
         .build();
 

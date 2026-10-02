@@ -18,7 +18,73 @@
   color: var(--text-muted);
   font-size: 1.0625rem;
   max-width: 58ch;
-  margin-bottom: var(--s7);
+  margin-bottom: var(--s5);
+}
+
+/* --------------------------------------------------- recording length -- */
+
+/* A segmented control over a native radio group. The pill reads as one
+   control with one choice made, which is what it is — three separate buttons
+   would imply three separate actions. */
+.duration-choice {
+  border: 0;
+  padding: 0;
+  margin: 0 0 var(--s7);
+}
+
+.duration-legend {
+  padding: 0;
+  margin-bottom: var(--s3);
+  font-size: 0.9375rem;
+  color: var(--text-muted);
+}
+
+.duration-options {
+  display: inline-flex;
+  gap: var(--s1);
+  padding: var(--s1);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+}
+
+.duration-option {
+  position: relative;        /* contains the absolutely-positioned input */
+  cursor: pointer;
+  padding: var(--s2) var(--s5);
+  border-radius: var(--r-full);
+  font-family: var(--display);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition:
+    background var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+
+/* The input stays in the DOM — it's what makes this a real radio group, and
+   what carries keyboard focus — but the label is the whole visible hit area. */
+.duration-option input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  pointer-events: none;
+}
+
+.duration-option:hover {
+  color: var(--text);
+}
+
+.duration-option-on {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Focus lands on the hidden input, so the ring has to be drawn on its label. */
+.duration-option:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* ------------------------------------------------------ prompt choice -- */

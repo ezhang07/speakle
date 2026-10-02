@@ -209,7 +209,7 @@ function Sessions() {
                     <div className="review-body">
                         <Metrics
                             wordsPerMinute={selected.wordsPerMinute}
-                            fillerCount={selected.fillerCount}
+                            fillersPerMinute={selected.fillersPerMinute}
                             longestPause={selected.longestPause}
                             longestPauseTimeStamp={selected.longestPauseTimeStamp}
                             bloatRatio={selected.bloatRatio}
@@ -287,7 +287,7 @@ function Sessions() {
                                     <span className="session-card-title">{title}</span>
 
                                     <span className="session-card-stats tabular">
-                                        <span><b>{s.fillerCount}</b> fillers</span>
+                                        <span><b>{s.fillersPerMinute.toFixed(1)}</b> fillers/min</span>
                                         <span><b>{Math.round(s.wordsPerMinute)}</b> wpm</span>
                                     </span>
                                 </button>
